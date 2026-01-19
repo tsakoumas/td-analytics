@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TD Analytics">
-    <meta name="theme-color" content="#0a0a0f">
+    <meta name="theme-color" content="#050508">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
     <title>TD Analytics</title>
@@ -1263,11 +1263,9 @@
         // ============================================
         
         const CONFIG = {
-            // IMPORTANT: Replace these with your actual Google Cloud credentials
-            CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
-            API_KEY: 'YOUR_GOOGLE_API_KEY',
-            // GA4 Property ID for tailordigitals.com - you'll get this from GA
-            PROPERTY_ID: 'properties/YOUR_GA4_PROPERTY_ID',
+            CLIENT_ID: '89616736300-derj13fmb1dp057t1q10tpo4f8nhgbka.apps.googleusercontent.com',
+            API_KEY: 'AIzaSyATDAD6FgtvyX4GZHOKrxPzlQ06aDBu5-c',
+            PROPERTY_ID: 'properties/512310601',
             SCOPES: 'https://www.googleapis.com/auth/analytics.readonly',
             DISCOVERY_DOC: 'https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta'
         };
@@ -1497,10 +1495,10 @@
                     landingPages
                 };
                 
-                // Update filter options
-                state.filterOptions.countries = geoCountries.rows.map(r => r.country);
-                state.filterOptions.cities = geoCities.rows.map(r => r.city);
-                state.filterOptions.sources = trafficSources.rows.map(r => r.sessionSource);
+                // Update filter options (with null safety)
+                state.filterOptions.countries = (geoCountries && geoCountries.rows) ? geoCountries.rows.map(r => r.country).filter(Boolean) : [];
+                state.filterOptions.cities = (geoCities && geoCities.rows) ? geoCities.rows.map(r => r.city).filter(Boolean) : [];
+                state.filterOptions.sources = (trafficSources && trafficSources.rows) ? trafficSources.rows.map(r => r.sessionSource).filter(Boolean) : [];
                 
                 state.lastSync = new Date();
                 document.getElementById('lastSync').textContent = state.lastSync.toLocaleTimeString();
@@ -1518,13 +1516,6 @@
         }
 
         async function runGA4Report(startDate, endDate, dimensions = [], metrics = ['sessions', 'totalUsers', 'bounceRate', 'averageSessionDuration', 'screenPageViews']) {
-            // For demo/development, return mock data
-            // In production, replace with actual GA4 API call
-            
-            if (CONFIG.CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
-                return generateMockData(dimensions, metrics);
-            }
-            
             try {
                 const response = await gapi.client.analyticsdata.properties.runReport({
                     property: CONFIG.PROPERTY_ID,
@@ -1532,6 +1523,7 @@
                         dateRanges: [{ startDate, endDate }],
                         dimensions: dimensions.map(d => ({ name: d })),
                         metrics: metrics.map(m => ({ name: m })),
+                        metricAggregations: ['TOTAL'],
                         limit: 10
                     }
                 });
@@ -1544,10 +1536,6 @@
         }
 
         async function runGA4ReportWithDate(startDate, endDate) {
-            if (CONFIG.CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
-                return generateMockDailyData();
-            }
-            
             try {
                 const response = await gapi.client.analyticsdata.properties.runReport({
                     property: CONFIG.PROPERTY_ID,
@@ -1567,10 +1555,12 @@
         }
 
         function parseGA4Response(result, dimensions, metrics) {
-            if (!result.rows) return { totals: {}, rows: [] };
+            if (!result || !result.rows) return { totals: {}, rows: [] };
             
             const totals = {};
-            if (result.totals && result.totals[0]) {
+            
+            // Try to get totals from metricAggregations first
+            if (result.totals && result.totals[0] && result.totals[0].metricValues) {
                 result.totals[0].metricValues.forEach((v, i) => {
                     totals[metrics[i]] = parseFloat(v.value);
                 });
@@ -1578,14 +1568,35 @@
             
             const rows = result.rows.map(row => {
                 const item = {};
-                row.dimensionValues?.forEach((v, i) => {
-                    item[dimensions[i]] = v.value;
-                });
-                row.metricValues?.forEach((v, i) => {
-                    item[metrics[i]] = parseFloat(v.value);
-                });
+                if (row.dimensionValues) {
+                    row.dimensionValues.forEach((v, i) => {
+                        item[dimensions[i]] = v.value;
+                    });
+                }
+                if (row.metricValues) {
+                    row.metricValues.forEach((v, i) => {
+                        item[metrics[i]] = parseFloat(v.value);
+                    });
+                }
                 return item;
             });
+            
+            // If no aggregation totals, calculate from rows (for reports without dimensions)
+            if (Object.keys(totals).length === 0 && rows.length > 0 && dimensions.length === 0) {
+                metrics.forEach(m => {
+                    if (rows[0][m] !== undefined) {
+                        totals[m] = rows[0][m];
+                    }
+                });
+            }
+            
+            // If still no totals and we have rows, sum them up
+            if (Object.keys(totals).length === 0 && rows.length > 0) {
+                metrics.forEach(m => {
+                    const sum = rows.reduce((acc, row) => acc + (row[m] || 0), 0);
+                    totals[m] = sum;
+                });
+            }
             
             return { totals, rows };
         }
@@ -1690,11 +1701,17 @@
             
             const { current, previous } = state.analyticsData;
             
-            // Update stat cards
-            updateStatCard('Sessions', current.totals.sessions, previous.totals.sessions, 'statSessions', 'statSessionsChange');
-            updateStatCard('Users', current.totals.totalUsers, previous.totals.totalUsers, 'statUsers', 'statUsersChange');
-            updateStatCard('Bounce', current.totals.bounceRate, previous.totals.bounceRate, 'statBounce', 'statBounceChange', true, true);
-            updateStatCard('Duration', current.totals.averageSessionDuration, previous.totals.averageSessionDuration, 'statDuration', 'statDurationChange', false, false, true);
+            // Safety check for totals
+            if (!current || !current.totals || !previous || !previous.totals) {
+                console.warn('Missing totals data for dashboard');
+                return;
+            }
+            
+            // Update stat cards (with fallback to 0)
+            updateStatCard('Sessions', current.totals.sessions || 0, previous.totals.sessions || 0, 'statSessions', 'statSessionsChange');
+            updateStatCard('Users', current.totals.totalUsers || 0, previous.totals.totalUsers || 0, 'statUsers', 'statUsersChange');
+            updateStatCard('Bounce', current.totals.bounceRate || 0, previous.totals.bounceRate || 0, 'statBounce', 'statBounceChange', true, true);
+            updateStatCard('Duration', current.totals.averageSessionDuration || 0, previous.totals.averageSessionDuration || 0, 'statDuration', 'statDurationChange', false, false, true);
             
             // Render tables
             renderTopPages();
@@ -1705,9 +1722,14 @@
             renderTrafficChart();
         }
 
-        function updateStatCard(label, current, previous, valueId, changeId, isPercent = false, inverseGood = false, isTime = false) {
+        function updateStatCard(label, currentVal, previousVal, valueId, changeId, isPercent = false, inverseGood = false, isTime = false) {
             const valueEl = document.getElementById(valueId);
             const changeEl = document.getElementById(changeId);
+            if (!valueEl || !changeEl) return;
+            
+            // Ensure we have numbers
+            const current = Number(currentVal) || 0;
+            const previous = Number(previousVal) || 0;
             
             let displayValue;
             if (isPercent) {
@@ -1742,70 +1764,84 @@
 
         function renderTopPages() {
             const container = document.getElementById('topPagesTable');
+            if (!container || !state.analyticsData || !state.analyticsData.topPages || !state.analyticsData.topPages.rows) return;
+            
             const rows = state.analyticsData.topPages.rows.slice(0, 5);
+            if (rows.length === 0) return;
             
             container.innerHTML = rows.map((row, i) => `
                 <div class="table-row">
                     <div class="table-label">
                         <span class="table-rank">${i + 1}</span>
-                        <span class="table-name">${row.pagePath}</span>
+                        <span class="table-name">${row.pagePath || '/'}</span>
                     </div>
-                    <div class="table-value">${formatNumber(row.screenPageViews)}</div>
+                    <div class="table-value">${formatNumber(row.screenPageViews || 0)}</div>
                 </div>
             `).join('');
         }
 
         function renderTrafficSources() {
             const container = document.getElementById('trafficSourcesTable');
+            if (!container || !state.analyticsData || !state.analyticsData.trafficSources || !state.analyticsData.trafficSources.rows) return;
+            
             const rows = state.analyticsData.trafficSources.rows.slice(0, 5);
+            if (rows.length === 0) return;
             
             container.innerHTML = rows.map((row, i) => `
                 <div class="table-row">
                     <div class="table-label">
                         <span class="table-rank">${i + 1}</span>
-                        <span class="table-name">${row.sessionSource}</span>
+                        <span class="table-name">${row.sessionSource || 'Unknown'}</span>
                     </div>
-                    <div class="table-value">${formatNumber(row.sessions)}</div>
+                    <div class="table-value">${formatNumber(row.sessions || 0)}</div>
                 </div>
             `).join('');
         }
 
         function renderDevices() {
             const container = document.getElementById('devicesTable');
+            if (!container || !state.analyticsData || !state.analyticsData.devices || !state.analyticsData.devices.rows) return;
+            
             const rows = state.analyticsData.devices.rows;
-            const total = rows.reduce((sum, r) => sum + r.sessions, 0);
+            if (rows.length === 0) return;
+            
+            const total = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+            if (total === 0) return;
             
             container.innerHTML = rows.map((row, i) => `
                 <div class="table-row">
                     <div class="table-label">
                         <span class="table-rank">${i + 1}</span>
-                        <span class="table-name">${row.deviceCategory}</span>
+                        <span class="table-name">${row.deviceCategory || 'Unknown'}</span>
                     </div>
-                    <div class="table-value">${((row.sessions / total) * 100).toFixed(1)}%</div>
+                    <div class="table-value">${(((row.sessions || 0) / total) * 100).toFixed(1)}%</div>
                 </div>
             `).join('');
         }
 
         function renderTrafficChart() {
-            const ctx = document.getElementById('trafficChart').getContext('2d');
+            const ctx = document.getElementById('trafficChart');
+            if (!ctx || !state.analyticsData || !state.analyticsData.dailyData || !state.analyticsData.dailyData.rows) return;
+            
             const data = state.analyticsData.dailyData.rows;
+            if (data.length === 0) return;
             
             if (state.trafficChart) {
                 state.trafficChart.destroy();
             }
             
             const labels = data.map(r => {
-                const d = r.date;
-                return `${d.slice(4,6)}/${d.slice(6,8)}`;
+                const d = r.date || '';
+                return d.length >= 8 ? `${d.slice(4,6)}/${d.slice(6,8)}` : '';
             });
             
-            state.trafficChart = new Chart(ctx, {
+            state.trafficChart = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels,
                     datasets: [{
                         label: 'Sessions',
-                        data: data.map(r => r.sessions),
+                        data: data.map(r => r.sessions || 0),
                         borderColor: '#9945ff',
                         backgroundColor: 'rgba(153, 69, 255, 0.1)',
                         fill: true,
@@ -1816,7 +1852,7 @@
                         borderWidth: 2
                     }, {
                         label: 'Users',
-                        data: data.map(r => r.totalUsers),
+                        data: data.map(r => r.totalUsers || 0),
                         borderColor: '#00e5ff',
                         backgroundColor: 'transparent',
                         tension: 0.4,
@@ -1879,9 +1915,22 @@
             const insights = [];
             const { current, previous, topPages, trafficSources, devices, dailyData } = state.analyticsData;
             
+            // Safety check for required data
+            if (!current || !current.totals || !previous || !previous.totals) {
+                renderInsights([{
+                    type: 'info',
+                    title: 'Gathering Data',
+                    detail: 'Analytics data is being processed. Insights will appear shortly.',
+                    badge: 'LOADING'
+                }]);
+                return;
+            }
+            
             // 1. Traffic Trend Analysis
-            const trafficChange = previous.totals.sessions > 0 
-                ? ((current.totals.sessions - previous.totals.sessions) / previous.totals.sessions) * 100 
+            const currentSessions = current.totals.sessions || 0;
+            const previousSessions = previous.totals.sessions || 0;
+            const trafficChange = previousSessions > 0 
+                ? ((currentSessions - previousSessions) / previousSessions) * 100 
                 : 0;
             
             if (trafficChange < -20) {
@@ -1901,7 +1950,7 @@
             }
             
             // 2. Bounce Rate Analysis
-            const bounceRate = current.totals.bounceRate * 100;
+            const bounceRate = (current.totals.bounceRate || 0) * 100;
             if (bounceRate > 70) {
                 insights.push({
                     type: 'warning',
@@ -1909,7 +1958,7 @@
                     detail: `Your bounce rate is <span class="insight-metric">${bounceRate.toFixed(1)}%</span>. This is above industry standard (40-60%). Consider: improving page load speed, mobile experience, or content relevance.`,
                     badge: 'ATTENTION'
                 });
-            } else if (bounceRate < 30) {
+            } else if (bounceRate > 0 && bounceRate < 30) {
                 insights.push({
                     type: 'success',
                     title: 'Excellent Engagement',
@@ -1919,8 +1968,8 @@
             }
             
             // 3. Session Duration Analysis
-            const avgDuration = current.totals.averageSessionDuration;
-            if (avgDuration < 30) {
+            const avgDuration = current.totals.averageSessionDuration || 0;
+            if (avgDuration > 0 && avgDuration < 30) {
                 insights.push({
                     type: 'warning',
                     title: 'Low Session Duration',
@@ -1937,8 +1986,10 @@
             }
             
             // 4. Pages per Session (Computed Metric)
-            const pagesPerSession = current.totals.screenPageViews / current.totals.sessions;
-            if (pagesPerSession < 1.5) {
+            const pageViews = current.totals.screenPageViews || 0;
+            const sessions = current.totals.sessions || 1;
+            const pagesPerSession = pageViews / sessions;
+            if (pagesPerSession > 0 && pagesPerSession < 1.5) {
                 insights.push({
                     type: 'info',
                     title: 'Low Pages Per Session',
@@ -1948,20 +1999,23 @@
             }
             
             // 5. New vs Returning User Ratio (Computed)
-            const newUserRatio = (current.totals.totalUsers / current.totals.sessions) * 100;
-            insights.push({
-                type: 'info',
-                title: 'User Acquisition Efficiency',
-                detail: `<span class="insight-metric">${newUserRatio.toFixed(0)}%</span> of sessions are from unique users. ${newUserRatio > 80 ? 'Strong acquisition, but focus on retention.' : 'Good balance of new and returning visitors.'}`,
-                badge: 'METRIC'
-            });
+            const totalUsers = current.totals.totalUsers || 0;
+            const newUserRatio = sessions > 0 ? (totalUsers / sessions) * 100 : 0;
+            if (newUserRatio > 0) {
+                insights.push({
+                    type: 'info',
+                    title: 'User Acquisition Efficiency',
+                    detail: `<span class="insight-metric">${newUserRatio.toFixed(0)}%</span> of sessions are from unique users. ${newUserRatio > 80 ? 'Strong acquisition, but focus on retention.' : 'Good balance of new and returning visitors.'}`,
+                    badge: 'METRIC'
+                });
+            }
             
             // 6. Device Performance Gap
-            if (devices.rows.length >= 2) {
+            if (devices && devices.rows && devices.rows.length >= 2) {
                 const mobile = devices.rows.find(r => r.deviceCategory === 'mobile');
                 const desktop = devices.rows.find(r => r.deviceCategory === 'desktop');
                 
-                if (mobile && desktop) {
+                if (mobile && desktop && mobile.sessions && desktop.sessions) {
                     const mobileShare = mobile.sessions / (mobile.sessions + desktop.sessions) * 100;
                     if (mobileShare > 60) {
                         insights.push({
@@ -1975,42 +2029,47 @@
             }
             
             // 7. Traffic Source Concentration Risk
-            if (trafficSources.rows.length > 0) {
+            if (trafficSources && trafficSources.rows && trafficSources.rows.length > 0) {
                 const topSource = trafficSources.rows[0];
-                const totalSessions = trafficSources.rows.reduce((sum, r) => sum + r.sessions, 0);
-                const topSourceShare = (topSource.sessions / totalSessions) * 100;
+                const totalSessions = trafficSources.rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
                 
-                if (topSourceShare > 70) {
-                    insights.push({
-                        type: 'warning',
-                        title: 'Traffic Concentration Risk',
-                        detail: `<span class="insight-metric">${topSourceShare.toFixed(0)}%</span> of traffic comes from "${topSource.sessionSource}". Diversify channels to reduce dependency risk.`,
-                        badge: 'RISK'
-                    });
+                if (totalSessions > 0 && topSource.sessions) {
+                    const topSourceShare = (topSource.sessions / totalSessions) * 100;
+                    
+                    if (topSourceShare > 70) {
+                        insights.push({
+                            type: 'warning',
+                            title: 'Traffic Concentration Risk',
+                            detail: `<span class="insight-metric">${topSourceShare.toFixed(0)}%</span> of traffic comes from "${topSource.sessionSource || 'top source'}". Diversify channels to reduce dependency risk.`,
+                            badge: 'RISK'
+                        });
+                    }
                 }
             }
             
             // 8. Weekend vs Weekday Pattern (if we have daily data)
-            if (dailyData.rows.length >= 7) {
+            if (dailyData && dailyData.rows && dailyData.rows.length >= 7) {
                 let weekendSessions = 0, weekdaySessions = 0;
                 dailyData.rows.forEach(row => {
-                    const date = new Date(
-                        row.date.slice(0, 4),
-                        parseInt(row.date.slice(4, 6)) - 1,
-                        row.date.slice(6, 8)
-                    );
-                    const day = date.getDay();
-                    if (day === 0 || day === 6) {
-                        weekendSessions += row.sessions;
-                    } else {
-                        weekdaySessions += row.sessions;
+                    if (row.date && row.sessions) {
+                        const date = new Date(
+                            row.date.slice(0, 4),
+                            parseInt(row.date.slice(4, 6)) - 1,
+                            row.date.slice(6, 8)
+                        );
+                        const day = date.getDay();
+                        if (day === 0 || day === 6) {
+                            weekendSessions += row.sessions;
+                        } else {
+                            weekdaySessions += row.sessions;
+                        }
                     }
                 });
                 
                 const weekendAvg = weekendSessions / 2;
                 const weekdayAvg = weekdaySessions / 5;
                 
-                if (weekendAvg > weekdayAvg * 1.5) {
+                if (weekdayAvg > 0 && weekendAvg > weekdayAvg * 1.5) {
                     insights.push({
                         type: 'info',
                         title: 'Weekend Traffic Pattern',
@@ -2021,101 +2080,115 @@
             }
             
             // 9. Page Concentration
-            if (topPages.rows.length >= 2) {
-                const totalViews = topPages.rows.reduce((sum, r) => sum + r.screenPageViews, 0);
-                const topPageShare = (topPages.rows[0].screenPageViews / totalViews) * 100;
+            if (topPages && topPages.rows && topPages.rows.length >= 2) {
+                const totalViews = topPages.rows.reduce((sum, r) => sum + (r.screenPageViews || 0), 0);
                 
-                if (topPageShare > 60) {
-                    insights.push({
-                        type: 'info',
-                        title: 'Homepage Dominance',
-                        detail: `<span class="insight-metric">${topPageShare.toFixed(0)}%</span> of views are on "${topPages.rows[0].pagePath}". Create compelling internal links to distribute traffic to key service pages.`,
-                        badge: 'FLOW'
-                    });
-                }
-            }
-            
-            // 10. Traffic Velocity (Growth Rate)
-            if (dailyData.rows.length >= 3) {
-                const recent = dailyData.rows.slice(-3);
-                const older = dailyData.rows.slice(0, 3);
-                const recentAvg = recent.reduce((sum, r) => sum + r.sessions, 0) / recent.length;
-                const olderAvg = older.reduce((sum, r) => sum + r.sessions, 0) / older.length;
-                const velocity = ((recentAvg - olderAvg) / olderAvg) * 100;
-                
-                if (Math.abs(velocity) > 20) {
-                    insights.push({
-                        type: velocity > 0 ? 'success' : 'warning',
-                        title: velocity > 0 ? 'Accelerating Growth' : 'Decelerating Traffic',
-                        detail: `Recent traffic is trending <span class="insight-metric">${velocity > 0 ? 'up' : 'down'} ${Math.abs(velocity).toFixed(0)}%</span> compared to earlier in the period. ${velocity > 0 ? 'Momentum is building!' : 'Investigate the slowdown.'}`,
-                        badge: 'TREND'
-                    });
-                }
-            }
-            
-            // 11. Geographic Concentration Analysis
-            if (state.analyticsData.geoCountries && state.analyticsData.geoCountries.rows.length > 0) {
-                const geoRows = state.analyticsData.geoCountries.rows;
-                const totalGeoSessions = geoRows.reduce((sum, r) => sum + r.sessions, 0);
-                const topCountry = geoRows[0];
-                const topCountryShare = (topCountry.sessions / totalGeoSessions) * 100;
-                
-                if (topCountryShare > 80) {
-                    insights.push({
-                        type: 'info',
-                        title: 'Single Market Dominance',
-                        detail: `<span class="insight-metric">${topCountryShare.toFixed(0)}%</span> of traffic comes from ${topCountry.country}. Consider localized campaigns for secondary markets to diversify reach.`,
-                        badge: 'GEO'
-                    });
-                } else if (geoRows.length >= 3) {
-                    const internationalShare = geoRows.slice(1).reduce((sum, r) => sum + r.sessions, 0) / totalGeoSessions * 100;
-                    if (internationalShare > 30) {
+                if (totalViews > 0 && topPages.rows[0].screenPageViews) {
+                    const topPageShare = (topPages.rows[0].screenPageViews / totalViews) * 100;
+                    
+                    if (topPageShare > 60) {
                         insights.push({
-                            type: 'success',
-                            title: 'Strong International Presence',
-                            detail: `<span class="insight-metric">${internationalShare.toFixed(0)}%</span> of traffic is international. Your content resonates across borders—consider multilingual landing pages.`,
-                            badge: 'GLOBAL'
+                            type: 'info',
+                            title: 'Homepage Dominance',
+                            detail: `<span class="insight-metric">${topPageShare.toFixed(0)}%</span> of views are on "${topPages.rows[0].pagePath || '/'}". Create compelling internal links to distribute traffic to key service pages.`,
+                            badge: 'FLOW'
                         });
                     }
                 }
             }
             
+            // 10. Traffic Velocity (Growth Rate)
+            if (dailyData && dailyData.rows && dailyData.rows.length >= 3) {
+                const recent = dailyData.rows.slice(-3);
+                const older = dailyData.rows.slice(0, 3);
+                const recentAvg = recent.reduce((sum, r) => sum + (r.sessions || 0), 0) / recent.length;
+                const olderAvg = older.reduce((sum, r) => sum + (r.sessions || 0), 0) / older.length;
+                
+                if (olderAvg > 0) {
+                    const velocity = ((recentAvg - olderAvg) / olderAvg) * 100;
+                    
+                    if (Math.abs(velocity) > 20) {
+                        insights.push({
+                            type: velocity > 0 ? 'success' : 'warning',
+                            title: velocity > 0 ? 'Accelerating Growth' : 'Decelerating Traffic',
+                            detail: `Recent traffic is trending <span class="insight-metric">${velocity > 0 ? 'up' : 'down'} ${Math.abs(velocity).toFixed(0)}%</span> compared to earlier in the period. ${velocity > 0 ? 'Momentum is building!' : 'Investigate the slowdown.'}`,
+                            badge: 'TREND'
+                        });
+                    }
+                }
+            }
+            
+            // 11. Geographic Concentration Analysis
+            if (state.analyticsData.geoCountries && state.analyticsData.geoCountries.rows && state.analyticsData.geoCountries.rows.length > 0) {
+                const geoRows = state.analyticsData.geoCountries.rows;
+                const totalGeoSessions = geoRows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+                const topCountry = geoRows[0];
+                
+                if (totalGeoSessions > 0 && topCountry && topCountry.sessions) {
+                    const topCountryShare = (topCountry.sessions / totalGeoSessions) * 100;
+                    
+                    if (topCountryShare > 80) {
+                        insights.push({
+                            type: 'info',
+                            title: 'Single Market Dominance',
+                            detail: `<span class="insight-metric">${topCountryShare.toFixed(0)}%</span> of traffic comes from ${topCountry.country || 'top country'}. Consider localized campaigns for secondary markets to diversify reach.`,
+                            badge: 'GEO'
+                        });
+                    } else if (geoRows.length >= 3) {
+                        const internationalShare = geoRows.slice(1).reduce((sum, r) => sum + (r.sessions || 0), 0) / totalGeoSessions * 100;
+                        if (internationalShare > 30) {
+                            insights.push({
+                                type: 'success',
+                                title: 'Strong International Presence',
+                                detail: `<span class="insight-metric">${internationalShare.toFixed(0)}%</span> of traffic is international. Your content resonates across borders—consider multilingual landing pages.`,
+                                badge: 'GLOBAL'
+                            });
+                        }
+                    }
+                }
+            }
+            
             // 12. City-Level Opportunity
-            if (state.analyticsData.geoCities && state.analyticsData.geoCities.rows.length >= 3) {
+            if (state.analyticsData.geoCities && state.analyticsData.geoCities.rows && state.analyticsData.geoCities.rows.length >= 3) {
                 const cityRows = state.analyticsData.geoCities.rows;
-                const topCities = cityRows.slice(0, 3).map(c => c.city).join(', ');
-                insights.push({
-                    type: 'info',
-                    title: 'Top City Clusters',
-                    detail: `Your top visitor cities are: <span class="insight-metric">${topCities}</span>. Consider local SEO and geo-targeted ads for these metros.`,
-                    badge: 'LOCAL'
-                });
+                const topCities = cityRows.slice(0, 3).map(c => c.city || 'Unknown').filter(c => c !== 'Unknown').join(', ');
+                if (topCities) {
+                    insights.push({
+                        type: 'info',
+                        title: 'Top City Clusters',
+                        detail: `Your top visitor cities are: <span class="insight-metric">${topCities}</span>. Consider local SEO and geo-targeted ads for these metros.`,
+                        badge: 'LOCAL'
+                    });
+                }
             }
             
             // 13. Referral Quality Analysis
-            if (state.analyticsData.referrals && state.analyticsData.referrals.rows.length > 0) {
+            if (state.analyticsData.referrals && state.analyticsData.referrals.rows && state.analyticsData.referrals.rows.length > 0) {
                 const refRows = state.analyticsData.referrals.rows;
                 const organicRefs = refRows.filter(r => r.sessionSourceMedium && r.sessionSourceMedium.includes('organic'));
                 const paidRefs = refRows.filter(r => r.sessionSourceMedium && (r.sessionSourceMedium.includes('paid') || r.sessionSourceMedium.includes('cpc')));
                 
-                const totalRefSessions = refRows.reduce((sum, r) => sum + r.sessions, 0);
-                const organicSessions = organicRefs.reduce((sum, r) => sum + r.sessions, 0);
-                const organicPct = (organicSessions / totalRefSessions) * 100;
+                const totalRefSessions = refRows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+                const organicSessions = organicRefs.reduce((sum, r) => sum + (r.sessions || 0), 0);
                 
-                if (organicPct > 60) {
-                    insights.push({
-                        type: 'success',
-                        title: 'Strong Organic Foundation',
-                        detail: `<span class="insight-metric">${organicPct.toFixed(0)}%</span> of traffic is organic. SEO is working—continue content investment.`,
-                        badge: 'SEO'
-                    });
-                } else if (organicPct < 20) {
-                    insights.push({
-                        type: 'warning',
-                        title: 'Low Organic Visibility',
-                        detail: `Only <span class="insight-metric">${organicPct.toFixed(0)}%</span> organic traffic. Prioritize SEO and content marketing to reduce paid dependency.`,
-                        badge: 'SEO'
-                    });
+                if (totalRefSessions > 0) {
+                    const organicPct = (organicSessions / totalRefSessions) * 100;
+                    
+                    if (organicPct > 60) {
+                        insights.push({
+                            type: 'success',
+                            title: 'Strong Organic Foundation',
+                            detail: `<span class="insight-metric">${organicPct.toFixed(0)}%</span> of traffic is organic. SEO is working—continue content investment.`,
+                            badge: 'SEO'
+                        });
+                    } else if (organicPct < 20) {
+                        insights.push({
+                            type: 'warning',
+                            title: 'Low Organic Visibility',
+                            detail: `Only <span class="insight-metric">${organicPct.toFixed(0)}%</span> organic traffic. Prioritize SEO and content marketing to reduce paid dependency.`,
+                            badge: 'SEO'
+                        });
+                    }
                 }
             }
             
@@ -2155,17 +2228,21 @@
             
             const { geoCountries, geoCities, referrals } = state.analyticsData;
             
-            // Render hotspots (top locations)
-            renderGeoHotspots(geoCountries.rows.slice(0, 4));
-            
-            // Render country list
-            renderGeoList('geoCountries', geoCountries.rows.slice(0, 5), 'country');
+            // Render hotspots (top locations) - with null checks
+            if (geoCountries && geoCountries.rows && geoCountries.rows.length > 0) {
+                renderGeoHotspots(geoCountries.rows.slice(0, 4));
+                renderGeoList('geoCountries', geoCountries.rows.slice(0, 5), 'country');
+            }
             
             // Render city list
-            renderGeoList('geoCities', geoCities.rows.slice(0, 5), 'city');
+            if (geoCities && geoCities.rows && geoCities.rows.length > 0) {
+                renderGeoList('geoCities', geoCities.rows.slice(0, 5), 'city');
+            }
             
             // Render referral sources
-            renderReferralSources(referrals.rows.slice(0, 6));
+            if (referrals && referrals.rows && referrals.rows.length > 0) {
+                renderReferralSources(referrals.rows.slice(0, 6));
+            }
         }
 
         function renderGeoHotspots(countries) {
@@ -2187,7 +2264,10 @@
 
         function renderGeoList(containerId, rows, dimension) {
             const container = document.getElementById(containerId);
-            const totalSessions = rows.reduce((sum, r) => sum + r.sessions, 0);
+            if (!container || !rows || rows.length === 0) return;
+            
+            const totalSessions = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+            if (totalSessions === 0) return;
             
             const flags = {
                 'United States': '🇺🇸', 'Canada': '🇨🇦', 'United Kingdom': '🇬🇧',
@@ -2196,7 +2276,7 @@
             
             container.innerHTML = rows.map(row => {
                 const pct = ((row.sessions / totalSessions) * 100).toFixed(1);
-                const name = row[dimension];
+                const name = row[dimension] || 'Unknown';
                 const flag = dimension === 'country' ? (flags[name] || '🌍') : '📍';
                 
                 return `
@@ -2406,19 +2486,33 @@
             document.getElementById('closeFilterModal').addEventListener('click', closeFilterModal);
             document.getElementById('filterBackdrop').addEventListener('click', closeFilterModal);
             
-            // Initialize Google APIs
-            if (typeof gapi !== 'undefined') {
+            // Initialize Google APIs - with retry for async loading
+            function initGoogleAPIs() {
+                if (typeof gapi !== 'undefined' && !gapiInited) {
+                    gapiLoaded();
+                }
+                if (typeof google !== 'undefined' && google.accounts && !gisInited) {
+                    gisLoaded();
+                }
+                
+                // Retry if not yet loaded
+                if (!gapiInited || !gisInited) {
+                    setTimeout(initGoogleAPIs, 100);
+                }
+            }
+            
+            initGoogleAPIs();
+        });
+
+        // Fallback: Also try on window load
+        window.addEventListener('load', function() {
+            if (typeof gapi !== 'undefined' && !gapiInited) {
                 gapiLoaded();
             }
-            if (typeof google !== 'undefined' && google.accounts) {
+            if (typeof google !== 'undefined' && google.accounts && !gisInited) {
                 gisLoaded();
             }
         });
-
-        // Load Google API library
-        window.onload = function() {
-            // APIs loaded via script tags
-        };
     </script>
 </body>
 </html>
