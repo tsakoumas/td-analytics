@@ -1316,14 +1316,32 @@
 
         async function initializeGapiClient() {
             try {
+                // Initialize the client with just the API key first
                 await gapi.client.init({
-                    apiKey: CONFIG.API_KEY,
-                    discoveryDocs: [CONFIG.DISCOVERY_DOC],
+                    apiKey: CONFIG.API_KEY
                 });
+                
+                // Then load the Analytics Data API separately
+                await gapi.client.load('https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta');
+                
+                console.log('GAPI client initialized successfully');
                 gapiInited = true;
                 maybeEnableButtons();
             } catch (err) {
                 console.error('Error initializing GAPI:', err);
+                // Try alternative initialization method
+                try {
+                    await gapi.client.init({
+                        apiKey: CONFIG.API_KEY,
+                        discoveryDocs: ['https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta']
+                    });
+                    console.log('GAPI initialized with fallback method');
+                    gapiInited = true;
+                    maybeEnableButtons();
+                } catch (err2) {
+                    console.error('GAPI fallback also failed:', err2);
+                    alert('Failed to initialize Google Analytics API. Please check:\n1. API Key is valid\n2. Google Analytics Data API is enabled in Cloud Console\n3. API Key has no overly restrictive domain limits');
+                }
             }
         }
 
@@ -1577,6 +1595,12 @@
             try {
                 console.log('GA4 API Request:', { startDate, endDate, dimensions, metrics });
                 
+                // Check if the API client is available
+                if (!gapi.client.analyticsdata) {
+                    console.error('Analytics Data API not loaded. Attempting to load...');
+                    await gapi.client.load('https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta');
+                }
+                
                 const response = await gapi.client.analyticsdata.properties.runReport({
                     property: CONFIG.PROPERTY_ID,
                     requestBody: {
@@ -1592,13 +1616,19 @@
                 return parseGA4Response(response.result, dimensions, metrics);
             } catch (err) {
                 console.error('GA4 API Error:', err);
-                // Return empty data instead of random mock data
-                return { totals: {}, rows: [], error: err.message || 'API Error' };
+                console.error('Error details:', JSON.stringify(err, null, 2));
+                return { totals: {}, rows: [], error: err.message || err.result?.error?.message || 'API Error' };
             }
         }
 
         async function runGA4ReportWithDate(startDate, endDate) {
             try {
+                // Check if the API client is available
+                if (!gapi.client.analyticsdata) {
+                    console.error('Analytics Data API not loaded. Attempting to load...');
+                    await gapi.client.load('https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta');
+                }
+                
                 const response = await gapi.client.analyticsdata.properties.runReport({
                     property: CONFIG.PROPERTY_ID,
                     requestBody: {
@@ -1612,7 +1642,6 @@
                 return parseGA4Response(response.result, ['date'], ['sessions', 'totalUsers']);
             } catch (err) {
                 console.error('GA4 API Error (daily):', err);
-                // Return empty data instead of random mock data
                 return { totals: {}, rows: [], error: err.message || 'API Error' };
             }
         }
