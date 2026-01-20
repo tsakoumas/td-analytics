@@ -1457,11 +1457,52 @@
         // Debounce flag to prevent rapid API calls
         let isFetching = false;
         
-        async function fetchAnalyticsData() {
+        // Cache for API responses - prevents refetching same data
+        const dataCache = {};
+        const CACHE_DURATION = 60000; // 1 minute cache
+        
+        function getCacheKey(range) {
+            return `analytics_${range}_${new Date().toISOString().split('T')[0]}`;
+        }
+        
+        function getCachedData(range) {
+            const key = getCacheKey(range);
+            const cached = dataCache[key];
+            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+                console.log('Using cached data for range:', range);
+                return cached.data;
+            }
+            return null;
+        }
+        
+        function setCachedData(range, data) {
+            const key = getCacheKey(range);
+            dataCache[key] = {
+                data: data,
+                timestamp: Date.now()
+            };
+            console.log('Cached data for range:', range);
+        }
+        
+        async function fetchAnalyticsData(forceRefresh = false) {
             // Prevent multiple simultaneous fetches
             if (isFetching) {
                 console.log('Fetch already in progress, skipping...');
                 return;
+            }
+            
+            // Check cache first (unless force refresh)
+            if (!forceRefresh) {
+                const cached = getCachedData(state.currentRange);
+                if (cached) {
+                    state.analyticsData = cached;
+                    state.lastSync = new Date();
+                    document.getElementById('lastSync').textContent = state.lastSync.toLocaleTimeString() + ' (cached)';
+                    renderDashboard();
+                    renderGeoData();
+                    generateInsights();
+                    return;
+                }
             }
             
             isFetching = true;
@@ -1506,6 +1547,9 @@
                     landingPages
                 };
                 
+                // Cache the data for this range
+                setCachedData(state.currentRange, state.analyticsData);
+                
                 // Update filter options (with null safety)
                 state.filterOptions.countries = (geoCountries && geoCountries.rows) ? geoCountries.rows.map(r => r.country).filter(Boolean) : [];
                 state.filterOptions.cities = (geoCities && geoCities.rows) ? geoCities.rows.map(r => r.city).filter(Boolean) : [];
@@ -1520,7 +1564,9 @@
                 
             } catch (err) {
                 console.error('Error fetching analytics:', err);
-                // Show error state
+                // Show visible error to user
+                const errorMsg = err.message || 'Failed to fetch analytics data';
+                alert('Error: ' + errorMsg + '\n\nCheck browser console (F12) for details.');
             } finally {
                 isFetching = false;
                 showLoading(false);
@@ -1572,49 +1618,79 @@
         }
 
         function parseGA4Response(result, dimensions, metrics) {
-            if (!result || !result.rows) return { totals: {}, rows: [] };
+            console.log('Parsing GA4 response:', { result, dimensions, metrics });
+            
+            // Handle null/empty results
+            if (!result) {
+                console.warn('GA4 response is null');
+                return { totals: {}, rows: [] };
+            }
             
             const totals = {};
+            const rows = [];
             
-            // Try to get totals from metricAggregations first
-            if (result.totals && result.totals[0] && result.totals[0].metricValues) {
-                result.totals[0].metricValues.forEach((v, i) => {
-                    totals[metrics[i]] = parseFloat(v.value);
+            // Parse rows first (always needed)
+            if (result.rows && result.rows.length > 0) {
+                result.rows.forEach(row => {
+                    const item = {};
+                    
+                    // Parse dimensions
+                    if (row.dimensionValues && dimensions.length > 0) {
+                        row.dimensionValues.forEach((v, i) => {
+                            if (dimensions[i]) {
+                                item[dimensions[i]] = v.value;
+                            }
+                        });
+                    }
+                    
+                    // Parse metrics
+                    if (row.metricValues) {
+                        row.metricValues.forEach((v, i) => {
+                            if (metrics[i]) {
+                                item[metrics[i]] = parseFloat(v.value) || 0;
+                            }
+                        });
+                    }
+                    
+                    rows.push(item);
                 });
             }
             
-            const rows = result.rows.map(row => {
-                const item = {};
-                if (row.dimensionValues) {
-                    row.dimensionValues.forEach((v, i) => {
-                        item[dimensions[i]] = v.value;
-                    });
-                }
-                if (row.metricValues) {
-                    row.metricValues.forEach((v, i) => {
-                        item[metrics[i]] = parseFloat(v.value);
-                    });
-                }
-                return item;
-            });
-            
-            // If no aggregation totals, calculate from rows (for reports without dimensions)
-            if (Object.keys(totals).length === 0 && rows.length > 0 && dimensions.length === 0) {
+            // CRITICAL FIX: For reports WITHOUT dimensions, totals come from rows[0]
+            // The GA4 API returns a single row with all the aggregate metrics
+            if (dimensions.length === 0 && rows.length > 0) {
+                // No dimensions = aggregate report, totals ARE the first (and only) row
                 metrics.forEach(m => {
                     if (rows[0][m] !== undefined) {
                         totals[m] = rows[0][m];
                     }
                 });
+                console.log('Totals from rows[0] (no dimensions):', totals);
             }
-            
-            // If still no totals and we have rows, sum them up
-            if (Object.keys(totals).length === 0 && rows.length > 0) {
-                metrics.forEach(m => {
-                    const sum = rows.reduce((acc, row) => acc + (row[m] || 0), 0);
-                    totals[m] = sum;
+            // For reports WITH dimensions, try metricAggregations totals
+            else if (result.totals && result.totals[0] && result.totals[0].metricValues) {
+                result.totals[0].metricValues.forEach((v, i) => {
+                    if (metrics[i]) {
+                        totals[metrics[i]] = parseFloat(v.value) || 0;
+                    }
                 });
+                console.log('Totals from result.totals:', totals);
+            }
+            // Fallback: sum up all rows (for dimension reports without aggregations)
+            else if (rows.length > 0) {
+                metrics.forEach(m => {
+                    // For rate metrics, average instead of sum
+                    if (m === 'bounceRate' || m === 'averageSessionDuration') {
+                        const values = rows.map(r => r[m] || 0).filter(v => v > 0);
+                        totals[m] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                    } else {
+                        totals[m] = rows.reduce((acc, row) => acc + (row[m] || 0), 0);
+                    }
+                });
+                console.log('Totals from row sum (fallback):', totals);
             }
             
+            console.log('Final parsed result:', { totals, rowCount: rows.length });
             return { totals, rows };
         }
 
@@ -2373,10 +2449,10 @@
             // Sign out button
             document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
             
-            // Refresh button
+            // Refresh button - force refresh bypasses cache
             document.getElementById('refreshBtn').addEventListener('click', () => {
                 if (state.isSignedIn) {
-                    fetchAnalyticsData();
+                    fetchAnalyticsData(true); // true = force refresh
                 }
             });
             
@@ -2442,4 +2518,3 @@
     </script>
 </body>
 </html>
-
