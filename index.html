@@ -7,53 +7,1261 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TD Analytics">
     <meta name="theme-color" content="#050508">
-    
-    <!-- Temporary CSP to help debug — remove once extensions issue is resolved -->
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' https://*.googleapis.com https://apis.google.com https://accounts.google.com;
-        script-src 'self' 'unsafe-inline' https://apis.google.com https://accounts.google.com https://cdn.jsdelivr.net;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-        font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self' https://*.googleapis.com https://analyticsdata.googleapis.com https://www.googleapis.com;
-        img-src 'self' data:;
-    ">
-    
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="manifest" href="manifest.json">
     <title>TD Analytics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
-    <!-- Your existing long <style> block here – keeping it unchanged -->
     <style>
-        /* Paste your full :root, layout, cards, etc. CSS here – omitted for brevity */
-        :root { --bg-primary: #050508; /* ... rest of your variables */ }
-        /* ... your complete CSS ... */
+        :root {
+            /* Tailor Digitals Brand Colors */
+            --bg-primary: #050508;
+            --bg-secondary: #0a0a10;
+            --bg-card: #0f0f18;
+            --bg-card-hover: #161622;
+            --text-primary: #f5f5fa;
+            --text-secondary: #9090a8;
+            --text-muted: #505068;
+            --accent-cyan: #00e5ff;
+            --accent-purple: #9945ff;
+            --accent-green: #00d68f;
+            --accent-red: #ff4757;
+            --accent-orange: #ffa502;
+            --accent-pink: #ff6b9d;
+            /* TD Signature Gradient: Purple to Cyan */
+            --gradient-primary: linear-gradient(135deg, #9945ff 0%, #00e5ff 100%);
+            --gradient-subtle: linear-gradient(135deg, rgba(153, 69, 255, 0.12) 0%, rgba(0, 229, 255, 0.06) 100%);
+            --gradient-card: linear-gradient(160deg, rgba(153, 69, 255, 0.08) 0%, rgba(0, 229, 255, 0.03) 100%);
+            --border-color: rgba(153, 69, 255, 0.12);
+            --border-glow: rgba(0, 229, 255, 0.2);
+            --shadow-glow: 0 0 60px rgba(153, 69, 255, 0.2);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 24px;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+
+        /* Header */
+        .header {
+            padding: 16px 20px;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 13px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(153, 69, 255, 0.3);
+        }
+
+        .logo-mark::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 6px;
+            right: 6px;
+            height: 2px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 1px;
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 17px;
+            letter-spacing: -0.5px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text span {
+            background: none;
+            -webkit-text-fill-color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover, .icon-btn:active {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        .icon-btn.active {
+            background: var(--accent-purple);
+            color: white;
+            border-color: var(--accent-purple);
+        }
+
+        /* Date Range Selector */
+        .date-selector {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding-bottom: 4px;
+        }
+
+        .date-selector::-webkit-scrollbar {
+            display: none;
+        }
+
+        .date-chip {
+            padding: 8px 14px;
+            border-radius: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .date-chip:hover, .date-chip.active {
+            background: var(--accent-purple);
+            color: white;
+            border-color: var(--accent-purple);
+        }
+
+        /* Filters Row */
+        .filters-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+
+        .filters-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-dropdown {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .filter-dropdown:hover {
+            border-color: var(--accent-purple);
+        }
+
+        .filter-dropdown.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 229, 255, 0.08);
+        }
+
+        .filter-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .filter-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .filter-clear {
+            padding: 8px 14px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-clear:hover {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        /* Filter Modal */
+        .filter-modal {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-top-left-radius: var(--radius-lg);
+            border-top-right-radius: var(--radius-lg);
+            padding: 20px;
+            padding-bottom: calc(20px + var(--safe-bottom));
+            z-index: 200;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .filter-modal.open {
+            transform: translateY(0);
+        }
+
+        .filter-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 199;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .filter-modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .filter-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .filter-modal-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .filter-option {
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .filter-option:hover {
+            background: var(--bg-card);
+        }
+
+        .filter-option.selected {
+            background: rgba(153, 69, 255, 0.15);
+            color: var(--accent-purple);
+        }
+
+        /* Geo Section */
+        .geo-section {
+            margin-bottom: 24px;
+        }
+
+        .geo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .geo-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .geo-card-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .geo-card-title svg {
+            width: 14px;
+            height: 14px;
+            color: var(--accent-cyan);
+        }
+
+        .geo-list {
+            list-style: none;
+        }
+
+        .geo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .geo-item:last-child {
+            border-bottom: none;
+        }
+
+        .geo-item-name {
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .geo-flag {
+            font-size: 16px;
+        }
+
+        .geo-item-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--accent-cyan);
+        }
+
+        .geo-bar {
+            height: 4px;
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .geo-bar-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+            transition: width 0.5s ease-out;
+        }
+
+        /* Geo Map Preview */
+        .geo-map-preview {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+            min-height: 180px;
+        }
+
+        .geo-map-preview::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%23ffffff' fill-opacity='0.03' d='M0 200 Q200 100 400 200 T800 200 L800 400 L0 400 Z'/%3E%3C/svg%3E");
+            background-size: cover;
+            opacity: 0.5;
+        }
+
+        .geo-hotspots {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .geo-hotspot {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(153, 69, 255, 0.15);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .geo-hotspot-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            padding-bottom: calc(80px + var(--safe-bottom));
+        }
+
+        /* Auth Screen */
+        .auth-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .auth-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-card);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .auth-icon svg {
+            width: 40px;
+            height: 40px;
+            color: var(--accent-purple);
+        }
+
+        .auth-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+            max-width: 280px;
+            margin-bottom: 32px;
+        }
+
+        .auth-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 28px;
+            background: white;
+            color: #333;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .auth-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .stat-change.positive {
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .stat-change.negative {
+            color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .stat-change.neutral {
+            color: var(--text-secondary);
+            background: rgba(136, 136, 160, 0.1);
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .section-link {
+            color: var(--accent-cyan);
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        /* Insights Section */
+        .insights-section {
+            margin-bottom: 24px;
+        }
+
+        .insight-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+        }
+
+        .insight-card.critical::before {
+            background: var(--accent-red);
+        }
+
+        .insight-card.warning::before {
+            background: var(--accent-orange);
+        }
+
+        .insight-card.success::before {
+            background: var(--accent-green);
+        }
+
+        .insight-card.info::before {
+            background: var(--accent-cyan);
+        }
+
+        .insight-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .insight-card.critical .insight-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+        }
+
+        .insight-card.warning .insight-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-orange);
+        }
+
+        .insight-card.success .insight-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+
+        .insight-card.info .insight-badge {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--accent-cyan);
+        }
+
+        .insight-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .insight-detail {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .insight-metric {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Chart Container */
+        .chart-section {
+            margin-bottom: 24px;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            height: 220px;
+            position: relative;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Data Table */
+        .data-table-section {
+            margin-bottom: 24px;
+        }
+
+        .data-table {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .table-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .table-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-rank {
+            width: 24px;
+            height: 24px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .table-name {
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .table-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--accent-cyan);
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            padding: 12px 20px;
+            padding-bottom: calc(12px + var(--safe-bottom));
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+        }
+
+        .tab-item:hover, .tab-item.active {
+            color: var(--accent-purple);
+        }
+
+        .tab-item.active {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .tab-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .tab-label {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* View Toggles */
+        .view-hidden {
+            display: none !important;
+        }
+
+        /* Refresh Animation */
+        .refreshing .loading-spinner {
+            animation: spin 0.5s linear infinite;
+        }
+
+        /* Pull to Refresh Indicator */
+        .pull-indicator {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            padding: 20px 0;
+        }
+
+        .settings-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .settings-value {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .settings-btn {
+            padding: 10px 16px;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Comparison Mode */
+        .comparison-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 6px;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-purple);
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 380px) {
+            .stat-value {
+                font-size: 24px;
+            }
+            .stats-grid {
+                gap: 8px;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Your full HTML structure here – keeping it unchanged -->
     <div class="app-container">
-        <!-- header, date-selector, filters-row, auth-screen, dashboard, settings-panel, loadingState, filter-modal, tab-bar -->
-        <!-- Paste your complete HTML body content here – omitted for brevity -->
+        <!-- Header -->
+        <header class="header">
+            <div class="header-top">
+                <div class="logo">
+                    <div class="logo-mark">TD</div>
+                    <div class="logo-text">Analytics <span>Pro</span></div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="refreshBtn" title="Refresh Data">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                            <path d="M16 16h5v5"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="settingsBtn" title="Settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="date-selector" id="dateSelector">
+                <div class="date-chip active" data-range="today">Today</div>
+                <div class="date-chip" data-range="7d">7 Days</div>
+                <div class="date-chip" data-range="28d">28 Days</div>
+                <div class="date-chip" data-range="90d">90 Days</div>
+                <div class="date-chip" data-range="ytd">YTD</div>
+            </div>
+            <!-- Filters Row -->
+            <div class="filters-row" id="filtersRow">
+                <div class="filter-dropdown" id="countryFilter">
+                    <span class="filter-label">Country</span>
+                    <span class="filter-value">All</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <div class="filter-dropdown" id="cityFilter">
+                    <span class="filter-label">City</span>
+                    <span class="filter-value">All</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <div class="filter-dropdown" id="sourceFilter">
+                    <span class="filter-label">Source</span>
+                    <span class="filter-value">All</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <button class="filter-clear" id="clearFilters">Clear</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Auth Screen (shown when not connected) -->
+            <div class="auth-screen" id="authScreen">
+                <div class="auth-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                    </svg>
+                </div>
+                <h1 class="auth-title">Connect Google Analytics</h1>
+                <p class="auth-subtitle">Sign in to view your Tailor Digitals website analytics and AI-powered insights.</p>
+                <button class="auth-btn" id="signInBtn">
+                    <svg viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign in with Google
+                </button>
+            </div>
+
+            <!-- Dashboard (shown when connected) -->
+            <div class="dashboard view-hidden" id="dashboard">
+                <!-- Quick Stats -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-label">Sessions</div>
+                        <div class="stat-value" id="statSessions">--</div>
+                        <div class="stat-change neutral" id="statSessionsChange">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Users</div>
+                        <div class="stat-value" id="statUsers">--</div>
+                        <div class="stat-change neutral" id="statUsersChange">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Bounce Rate</div>
+                        <div class="stat-value" id="statBounce">--</div>
+                        <div class="stat-change neutral" id="statBounceChange">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg. Duration</div>
+                        <div class="stat-value" id="statDuration">--</div>
+                        <div class="stat-change neutral" id="statDurationChange">--</div>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                <section class="insights-section" id="insightsSection">
+                    <div class="section-header">
+                        <h2 class="section-title">🧠 AI Insights</h2>
+                    </div>
+                    <div id="insightsList">
+                        <!-- Insights will be dynamically inserted -->
+                    </div>
+                </section>
+
+                <!-- Traffic Chart -->
+                <section class="chart-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Traffic Trend</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trafficChart" class="chart-canvas"></canvas>
+                    </div>
+                </section>
+
+                <!-- Geo Data Section -->
+                <section class="geo-section">
+                    <div class="section-header">
+                        <h2 class="section-title">📍 Geographic Data</h2>
+                    </div>
+                    
+                    <!-- Visitor Hotspots -->
+                    <div class="geo-map-preview">
+                        <div class="geo-hotspots" id="geoHotspots">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+
+                    <div class="geo-grid">
+                        <!-- Top Countries -->
+                        <div class="geo-card">
+                            <div class="geo-card-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                Countries
+                            </div>
+                            <ul class="geo-list" id="geoCountries">
+                                <!-- Dynamically filled -->
+                            </ul>
+                        </div>
+
+                        <!-- Top Cities -->
+                        <div class="geo-card">
+                            <div class="geo-card-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+                                Cities
+                            </div>
+                            <ul class="geo-list" id="geoCities">
+                                <!-- Dynamically filled -->
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Referral Sources Section -->
+                <section class="data-table-section">
+                    <div class="section-header">
+                        <h2 class="section-title">🔗 Where They Came From</h2>
+                    </div>
+                    <div class="data-table" id="referralSourcesTable">
+                        <!-- Dynamically filled -->
+                    </div>
+                </section>
+
+                <!-- Top Pages -->
+                <section class="data-table-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Top Pages</h2>
+                    </div>
+                    <div class="data-table" id="topPagesTable">
+                        <!-- Rows will be dynamically inserted -->
+                    </div>
+                </section>
+
+                <!-- Traffic Sources -->
+                <section class="data-table-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Traffic Sources</h2>
+                    </div>
+                    <div class="data-table" id="trafficSourcesTable">
+                        <!-- Rows will be dynamically inserted -->
+                    </div>
+                </section>
+
+                <!-- Device Breakdown -->
+                <section class="data-table-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Devices</h2>
+                    </div>
+                    <div class="data-table" id="devicesTable">
+                        <!-- Rows will be dynamically inserted -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="settings-panel view-hidden" id="settingsPanel">
+                <div class="section-header">
+                    <h2 class="section-title">Settings</h2>
+                </div>
+                <div class="settings-group">
+                    <div class="settings-item">
+                        <span class="settings-label">Connected Account</span>
+                        <span class="settings-value" id="connectedEmail">--</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-label">Property</span>
+                        <span class="settings-value" id="connectedProperty">tailordigitals.com</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="settings-label">Last Sync</span>
+                        <span class="settings-value" id="lastSync">--</span>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="settings-item">
+                        <span class="settings-label">Sign Out</span>
+                        <button class="settings-btn" id="signOutBtn">Disconnect</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading view-hidden" id="loadingState">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Fetching your analytics...</p>
+            </div>
+        </main>
+
+        <!-- Filter Modal Backdrop -->
+        <div class="filter-modal-backdrop" id="filterBackdrop"></div>
         
-        <!-- Add this error banner right after auth-screen for visibility -->
-        <div id="apiErrorBanner" style="display:none; background:#ff4757; color:white; padding:16px; margin:20px; border-radius:8px; text-align:center;">
-            <strong>API Initialization Failed</strong><br>
-            <span id="apiErrorMessage">Check console (F12) for details. Common fixes: enable Analytics Data API, check API key restrictions, try Incognito.</span>
+        <!-- Filter Modal -->
+        <div class="filter-modal" id="filterModal">
+            <div class="filter-modal-header">
+                <span class="filter-modal-title" id="filterModalTitle">Select Country</span>
+                <button class="icon-btn" id="closeFilterModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="filter-options" id="filterOptions">
+                <!-- Dynamically filled -->
+            </div>
         </div>
+
+        <!-- Tab Bar -->
+        <nav class="tab-bar">
+            <div class="tab-item active" data-tab="dashboard">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="9"/>
+                    <rect x="14" y="3" width="7" height="5"/>
+                    <rect x="14" y="12" width="7" height="9"/>
+                    <rect x="3" y="16" width="7" height="5"/>
+                </svg>
+                <span class="tab-label">Dashboard</span>
+            </div>
+            <div class="tab-item" data-tab="insights">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2a10 10 0 1 0 10 10H12V2z"/>
+                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                    <circle cx="12" cy="12" r="6"/>
+                </svg>
+                <span class="tab-label">Insights</span>
+            </div>
+            <div class="tab-item" data-tab="settings">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v4m0 14v4M4.22 4.22l2.83 2.83m9.9 9.9l2.83 2.83M1 12h4m14 0h4M4.22 19.78l2.83-2.83m9.9-9.9l2.83-2.83"/>
+                </svg>
+                <span class="tab-label">Settings</span>
+            </div>
+        </nav>
     </div>
 
+    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
     <script>
         // ============================================
-        // TD Analytics Pro – FIXED VERSION (Jan 2026)
+        // TD Analytics Pro - Main Application
         // ============================================
-
+        
         const CONFIG = {
             CLIENT_ID: '89616736300-derj13fmb1dp057t1q10tpo4f8nhgbka.apps.googleusercontent.com',
             API_KEY: 'AIzaSyATDAD6FgtvyX4GZHOKrxPzlQ06aDBu5-c',
@@ -62,17 +1270,30 @@
             DISCOVERY_DOC: 'https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta'
         };
 
+        // App State
         const state = {
             isSignedIn: false,
             currentRange: 'today',
+            currentTab: 'dashboard',
             analyticsData: null,
+            previousPeriodData: null,
             trafficChart: null,
             lastSync: null,
-            filters: { country: null, city: null, source: null },
-            filterOptions: { countries: [], cities: [], sources: [] },
+            // Filter state
+            filters: {
+                country: null,
+                city: null,
+                source: null
+            },
+            filterOptions: {
+                countries: [],
+                cities: [],
+                sources: []
+            },
             activeFilterType: null
         };
 
+        // Date Range Configurations
         const dateRanges = {
             'today': { days: 0, label: 'Today', compare: 1 },
             '7d': { days: 7, label: 'Last 7 Days', compare: 7 },
@@ -81,90 +1302,1282 @@
             'ytd': { days: 'ytd', label: 'Year to Date', compare: 'ytd' }
         };
 
+        // ============================================
+        // Google OAuth & API Initialization
+        // ============================================
+
         let tokenClient;
         let gapiInited = false;
         let gisInited = false;
+        let accessToken = null;
 
-        // ── IMPROVED API INITIALIZATION ────────────────────────────────────────
-        function initGoogleAPIs() {
-            if (typeof gapi === 'undefined' || typeof google === 'undefined') {
-                setTimeout(initGoogleAPIs, 200);
-                return;
-            }
+        function gapiLoaded() {
+            if (gapiInited) return;
+            gapi.load('client', initializeGapiClient);
+        }
 
-            // Load gapi.client
-            gapi.load('client', async () => {
-                try {
-                    console.log('Starting GAPI client init...');
-                    await gapi.client.init({
-                        apiKey: CONFIG.API_KEY,
-                        discoveryDocs: [CONFIG.DISCOVERY_DOC]
-                    });
-
-                    // Explicitly load the discovery doc again if needed
-                    if (!gapi.client.analyticsdata) {
-                        console.log('AnalyticsData not found – forcing load...');
-                        await gapi.client.load('analyticsdata', 'v1beta');
-                    }
-
-                    console.log('GAPI + Analytics Data API successfully initialized!');
-                    gapiInited = true;
-                    maybeEnableButtons();
-                } catch (err) {
-                    console.error('GAPI / Analytics Data API init failed:', err);
-                    const msg = err.result?.error?.message || err.message || 'Unknown error';
-                    document.getElementById('apiErrorMessage').textContent = `API init failed: ${msg}`;
-                    document.getElementById('apiErrorBanner').style.display = 'block';
-                }
-            });
-
-            // Google Identity Services
-            if (typeof google !== 'undefined' && google.accounts) {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CONFIG.CLIENT_ID,
-                    scope: CONFIG.SCOPES,
-                    callback: (resp) => {
-                        if (resp.error) {
-                            console.error('OAuth error:', resp);
-                            return;
-                        }
-                        localStorage.setItem('ga_token', resp.access_token);
-                        localStorage.setItem('ga_token_expiry', Date.now() + (resp.expires_in * 1000));
-                        handleSignIn();
-                    }
+        async function initializeGapiClient() {
+            if (gapiInited) return;
+            
+            try {
+                await gapi.client.init({
+                    apiKey: CONFIG.API_KEY
                 });
-                gisInited = true;
+                
+                console.log('✓ GAPI client initialized');
+                gapiInited = true;
+                maybeEnableButtons();
+            } catch (err) {
+                console.error('Error initializing GAPI:', err);
+                // Still mark as inited - we'll use direct fetch instead
+                gapiInited = true;
                 maybeEnableButtons();
             }
         }
 
+        function gisLoaded() {
+            if (gisInited) return;
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CONFIG.CLIENT_ID,
+                scope: CONFIG.SCOPES,
+                callback: '', // defined later
+            });
+            gisInited = true;
+            console.log('✓ GIS initialized');
+            maybeEnableButtons();
+        }
+
         function maybeEnableButtons() {
             if (gapiInited && gisInited) {
+                console.log('✓ Both APIs ready');
+                // Check if user has existing token
                 const token = localStorage.getItem('ga_token');
                 const expiry = localStorage.getItem('ga_token_expiry');
+                
                 if (token && expiry && Date.now() < parseInt(expiry)) {
-                    gapi.client.setToken({ access_token: token });
+                    console.log('✓ Found valid cached token');
+                    accessToken = token;
                     handleSignIn();
+                } else {
+                    // Clear expired token
+                    localStorage.removeItem('ga_token');
+                    localStorage.removeItem('ga_token_expiry');
+                    console.log('No valid token, showing sign-in screen');
                 }
             }
         }
 
-        // ── Rest of your code (auth handlers, fetchAnalyticsData, parsing, rendering, etc.) ──
-        // Paste the rest of your <script> content here (handleAuthClick, handleSignIn, fetchAnalyticsData, parseGA4Response, render functions, event listeners, etc.)
-        // ... (your existing functions go here) ...
+        // ============================================
+        // Authentication Handlers
+        // ============================================
 
-        // DOM ready – start init
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    console.error('Auth error:', resp);
+                    alert('Authentication failed: ' + (resp.error_description || resp.error));
+                    return;
+                }
+                accessToken = resp.access_token;
+                localStorage.setItem('ga_token', resp.access_token);
+                localStorage.setItem('ga_token_expiry', Date.now() + (resp.expires_in * 1000));
+                handleSignIn();
+            };
+
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        function handleSignIn() {
+            console.log('✓ Signed in, loading dashboard...');
+            state.isSignedIn = true;
+            document.getElementById('authScreen').classList.add('view-hidden');
+            document.getElementById('dashboard').classList.remove('view-hidden');
+            
+            // Get user email if available
+            fetchUserInfo();
+            fetchAnalyticsData();
+        }
+
+        function handleSignOut() {
+            if (accessToken) {
+                google.accounts.oauth2.revoke(accessToken);
+            }
+            accessToken = null;
+            localStorage.removeItem('ga_token');
+            localStorage.removeItem('ga_token_expiry');
+            
+            state.isSignedIn = false;
+            document.getElementById('authScreen').classList.remove('view-hidden');
+            document.getElementById('dashboard').classList.add('view-hidden');
+            document.getElementById('settingsPanel').classList.add('view-hidden');
+            
+            // Reset to dashboard tab
+            switchTab('dashboard');
+        }
+
+        async function fetchUserInfo() {
+            try {
+                const token = gapi.client.getToken();
+                if (token) {
+                    const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                        headers: { Authorization: `Bearer ${token.access_token}` }
+                    });
+                    const data = await response.json();
+                    document.getElementById('connectedEmail').textContent = data.email || 'Connected';
+                }
+            } catch (err) {
+                console.error('Error fetching user info:', err);
+            }
+        }
+
+        // ============================================
+        // Analytics Data Fetching
+        // ============================================
+
+        function getDateRange(rangeKey) {
+            const today = new Date();
+            const range = dateRanges[rangeKey];
+            
+            let startDate, endDate, compareStart, compareEnd;
+            
+            if (range.days === 'ytd') {
+                startDate = new Date(today.getFullYear(), 0, 1);
+                endDate = today;
+                compareStart = new Date(today.getFullYear() - 1, 0, 1);
+                compareEnd = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+            } else if (range.days === 0) {
+                startDate = today;
+                endDate = today;
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                compareStart = yesterday;
+                compareEnd = yesterday;
+            } else {
+                startDate = new Date(today);
+                startDate.setDate(startDate.getDate() - range.days);
+                endDate = today;
+                
+                compareStart = new Date(startDate);
+                compareStart.setDate(compareStart.getDate() - range.days);
+                compareEnd = new Date(startDate);
+                compareEnd.setDate(compareEnd.getDate() - 1);
+            }
+            
+            const formatDate = (d) => d.toISOString().split('T')[0];
+            
+            return {
+                current: { start: formatDate(startDate), end: formatDate(endDate) },
+                previous: { start: formatDate(compareStart), end: formatDate(compareEnd) }
+            };
+        }
+
+        // Debounce flag to prevent rapid API calls
+        let isFetching = false;
+        
+        // Cache for API responses - prevents refetching same data
+        const dataCache = {};
+        const CACHE_DURATION = 60000; // 1 minute cache
+        
+        function getCacheKey(range) {
+            return `analytics_${range}_${new Date().toISOString().split('T')[0]}`;
+        }
+        
+        function getCachedData(range) {
+            const key = getCacheKey(range);
+            const cached = dataCache[key];
+            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+                console.log('Using cached data for range:', range);
+                return cached.data;
+            }
+            return null;
+        }
+        
+        function setCachedData(range, data) {
+            const key = getCacheKey(range);
+            dataCache[key] = {
+                data: data,
+                timestamp: Date.now()
+            };
+            console.log('Cached data for range:', range);
+        }
+        
+        async function fetchAnalyticsData(forceRefresh = false) {
+            // Prevent multiple simultaneous fetches
+            if (isFetching) {
+                console.log('Fetch already in progress, skipping...');
+                return;
+            }
+            
+            // Check cache first (unless force refresh)
+            if (!forceRefresh) {
+                const cached = getCachedData(state.currentRange);
+                if (cached) {
+                    state.analyticsData = cached;
+                    state.lastSync = new Date();
+                    document.getElementById('lastSync').textContent = state.lastSync.toLocaleTimeString() + ' (cached)';
+                    renderDashboard();
+                    renderGeoData();
+                    generateInsights();
+                    return;
+                }
+            }
+            
+            isFetching = true;
+            showLoading(true);
+            
+            const dates = getDateRange(state.currentRange);
+            console.log('Fetching data for range:', state.currentRange, dates);
+            
+            try {
+                // Fetch current period data
+                const currentData = await runGA4Report(dates.current.start, dates.current.end);
+                const previousData = await runGA4Report(dates.previous.start, dates.previous.end);
+                
+                // Fetch additional breakdowns
+                const topPages = await runGA4Report(dates.current.start, dates.current.end, ['pagePath'], ['screenPageViews', 'averageSessionDuration', 'bounceRate']);
+                const trafficSources = await runGA4Report(dates.current.start, dates.current.end, ['sessionSource'], ['sessions', 'totalUsers']);
+                const devices = await runGA4Report(dates.current.start, dates.current.end, ['deviceCategory'], ['sessions', 'totalUsers']);
+                const dailyData = await runGA4ReportWithDate(dates.current.start, dates.current.end);
+                
+                // Fetch geo data
+                const geoCountries = await runGA4Report(dates.current.start, dates.current.end, ['country'], ['sessions', 'totalUsers']);
+                const geoCities = await runGA4Report(dates.current.start, dates.current.end, ['city'], ['sessions', 'totalUsers']);
+                const geoRegions = await runGA4Report(dates.current.start, dates.current.end, ['region'], ['sessions', 'totalUsers']);
+                
+                // Fetch referral data (where visitors came from)
+                const referrals = await runGA4Report(dates.current.start, dates.current.end, ['sessionSourceMedium'], ['sessions', 'totalUsers', 'bounceRate']);
+                const landingPages = await runGA4Report(dates.current.start, dates.current.end, ['landingPage'], ['sessions', 'totalUsers']);
+                
+                state.analyticsData = {
+                    current: currentData,
+                    previous: previousData,
+                    topPages,
+                    trafficSources,
+                    devices,
+                    dailyData,
+                    // Geo data
+                    geoCountries,
+                    geoCities,
+                    geoRegions,
+                    // Referral data
+                    referrals,
+                    landingPages
+                };
+                
+                // Cache the data for this range
+                setCachedData(state.currentRange, state.analyticsData);
+                
+                // Update filter options (with null safety)
+                state.filterOptions.countries = (geoCountries && geoCountries.rows) ? geoCountries.rows.map(r => r.country).filter(Boolean) : [];
+                state.filterOptions.cities = (geoCities && geoCities.rows) ? geoCities.rows.map(r => r.city).filter(Boolean) : [];
+                state.filterOptions.sources = (trafficSources && trafficSources.rows) ? trafficSources.rows.map(r => r.sessionSource).filter(Boolean) : [];
+                
+                state.lastSync = new Date();
+                document.getElementById('lastSync').textContent = state.lastSync.toLocaleTimeString();
+                
+                renderDashboard();
+                renderGeoData();
+                generateInsights();
+                
+            } catch (err) {
+                console.error('Error fetching analytics:', err);
+                // Show visible error to user
+                const errorMsg = err.message || 'Failed to fetch analytics data';
+                alert('Error: ' + errorMsg + '\n\nCheck browser console (F12) for details.');
+            } finally {
+                isFetching = false;
+                showLoading(false);
+            }
+        }
+
+        async function runGA4Report(startDate, endDate, dimensions = [], metrics = ['sessions', 'totalUsers', 'bounceRate', 'averageSessionDuration', 'screenPageViews']) {
+            try {
+                console.log('GA4 API Request:', { startDate, endDate, dimensions, metrics });
+                
+                if (!accessToken) {
+                    throw new Error('No access token. Please sign in again.');
+                }
+                
+                const requestBody = {
+                    dateRanges: [{ startDate, endDate }],
+                    metrics: metrics.map(m => ({ name: m }))
+                };
+                
+                if (dimensions.length > 0) {
+                    requestBody.dimensions = dimensions.map(d => ({ name: d }));
+                }
+                
+                const response = await fetch(
+                    `https://analyticsdata.googleapis.com/v1beta/${CONFIG.PROPERTY_ID}:runReport`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    }
+                );
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('GA4 API Error Response:', errorData);
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('GA4 API Response:', result);
+                return parseGA4Response(result, dimensions, metrics);
+            } catch (err) {
+                console.error('GA4 API Error:', err);
+                return { totals: {}, rows: [], error: err.message || 'API Error' };
+            }
+        }
+
+        async function runGA4ReportWithDate(startDate, endDate) {
+            try {
+                if (!accessToken) {
+                    throw new Error('No access token. Please sign in again.');
+                }
+                
+                const requestBody = {
+                    dateRanges: [{ startDate, endDate }],
+                    dimensions: [{ name: 'date' }],
+                    metrics: [{ name: 'sessions' }, { name: 'totalUsers' }],
+                    orderBys: [{ dimension: { dimensionName: 'date' } }]
+                };
+                
+                const response = await fetch(
+                    `https://analyticsdata.googleapis.com/v1beta/${CONFIG.PROPERTY_ID}:runReport`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    }
+                );
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return parseGA4Response(result, ['date'], ['sessions', 'totalUsers']);
+            } catch (err) {
+                console.error('GA4 API Error (daily):', err);
+                return { totals: {}, rows: [], error: err.message || 'API Error' };
+            }
+        }
+
+        function parseGA4Response(result, dimensions, metrics) {
+            console.log('Parsing GA4 response:', { result, dimensions, metrics });
+            
+            // Handle null/empty results
+            if (!result) {
+                console.warn('GA4 response is null');
+                return { totals: {}, rows: [] };
+            }
+            
+            const totals = {};
+            const rows = [];
+            
+            // Parse rows first (always needed)
+            if (result.rows && result.rows.length > 0) {
+                result.rows.forEach(row => {
+                    const item = {};
+                    
+                    // Parse dimensions
+                    if (row.dimensionValues && dimensions.length > 0) {
+                        row.dimensionValues.forEach((v, i) => {
+                            if (dimensions[i]) {
+                                item[dimensions[i]] = v.value;
+                            }
+                        });
+                    }
+                    
+                    // Parse metrics
+                    if (row.metricValues) {
+                        row.metricValues.forEach((v, i) => {
+                            if (metrics[i]) {
+                                item[metrics[i]] = parseFloat(v.value) || 0;
+                            }
+                        });
+                    }
+                    
+                    rows.push(item);
+                });
+            }
+            
+            // CRITICAL FIX: For reports WITHOUT dimensions, totals come from rows[0]
+            // The GA4 API returns a single row with all the aggregate metrics
+            if (dimensions.length === 0 && rows.length > 0) {
+                // No dimensions = aggregate report, totals ARE the first (and only) row
+                metrics.forEach(m => {
+                    if (rows[0][m] !== undefined) {
+                        totals[m] = rows[0][m];
+                    }
+                });
+                console.log('Totals from rows[0] (no dimensions):', totals);
+            }
+            // For reports WITH dimensions, try metricAggregations totals
+            else if (result.totals && result.totals[0] && result.totals[0].metricValues) {
+                result.totals[0].metricValues.forEach((v, i) => {
+                    if (metrics[i]) {
+                        totals[metrics[i]] = parseFloat(v.value) || 0;
+                    }
+                });
+                console.log('Totals from result.totals:', totals);
+            }
+            // Fallback: sum up all rows (for dimension reports without aggregations)
+            else if (rows.length > 0) {
+                metrics.forEach(m => {
+                    // For rate metrics, average instead of sum
+                    if (m === 'bounceRate' || m === 'averageSessionDuration') {
+                        const values = rows.map(r => r[m] || 0).filter(v => v > 0);
+                        totals[m] = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                    } else {
+                        totals[m] = rows.reduce((acc, row) => acc + (row[m] || 0), 0);
+                    }
+                });
+                console.log('Totals from row sum (fallback):', totals);
+            }
+            
+            console.log('Final parsed result:', { totals, rowCount: rows.length });
+            return { totals, rows };
+        }
+
+        // ============================================
+        // Dashboard Rendering
+        // ============================================
+
+        function renderDashboard() {
+            if (!state.analyticsData) return;
+            
+            const { current, previous } = state.analyticsData;
+            
+            // Safety check for totals
+            if (!current || !current.totals || !previous || !previous.totals) {
+                console.warn('Missing totals data for dashboard');
+                return;
+            }
+            
+            // Update stat cards (with fallback to 0)
+            updateStatCard('Sessions', current.totals.sessions || 0, previous.totals.sessions || 0, 'statSessions', 'statSessionsChange');
+            updateStatCard('Users', current.totals.totalUsers || 0, previous.totals.totalUsers || 0, 'statUsers', 'statUsersChange');
+            updateStatCard('Bounce', current.totals.bounceRate || 0, previous.totals.bounceRate || 0, 'statBounce', 'statBounceChange', true, true);
+            updateStatCard('Duration', current.totals.averageSessionDuration || 0, previous.totals.averageSessionDuration || 0, 'statDuration', 'statDurationChange', false, false, true);
+            
+            // Render tables
+            renderTopPages();
+            renderTrafficSources();
+            renderDevices();
+            
+            // Render chart
+            renderTrafficChart();
+        }
+
+        function updateStatCard(label, currentVal, previousVal, valueId, changeId, isPercent = false, inverseGood = false, isTime = false) {
+            const valueEl = document.getElementById(valueId);
+            const changeEl = document.getElementById(changeId);
+            if (!valueEl || !changeEl) return;
+            
+            // Ensure we have numbers
+            const current = Number(currentVal) || 0;
+            const previous = Number(previousVal) || 0;
+            
+            let displayValue;
+            if (isPercent) {
+                displayValue = (current * 100).toFixed(1) + '%';
+            } else if (isTime) {
+                const mins = Math.floor(current / 60);
+                const secs = Math.floor(current % 60);
+                displayValue = `${mins}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                displayValue = formatNumber(current);
+            }
+            
+            valueEl.textContent = displayValue;
+            
+            // Calculate change
+            const change = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+            const changeText = (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
+            
+            let changeClass = 'neutral';
+            if (change > 0) changeClass = inverseGood ? 'negative' : 'positive';
+            if (change < 0) changeClass = inverseGood ? 'positive' : 'negative';
+            
+            changeEl.textContent = changeText;
+            changeEl.className = `stat-change ${changeClass}`;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return Math.round(num).toLocaleString();
+        }
+
+        function renderTopPages() {
+            const container = document.getElementById('topPagesTable');
+            if (!container || !state.analyticsData || !state.analyticsData.topPages || !state.analyticsData.topPages.rows) return;
+            
+            const rows = state.analyticsData.topPages.rows.slice(0, 5);
+            if (rows.length === 0) return;
+            
+            container.innerHTML = rows.map((row, i) => `
+                <div class="table-row">
+                    <div class="table-label">
+                        <span class="table-rank">${i + 1}</span>
+                        <span class="table-name">${row.pagePath || '/'}</span>
+                    </div>
+                    <div class="table-value">${formatNumber(row.screenPageViews || 0)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderTrafficSources() {
+            const container = document.getElementById('trafficSourcesTable');
+            if (!container || !state.analyticsData || !state.analyticsData.trafficSources || !state.analyticsData.trafficSources.rows) return;
+            
+            const rows = state.analyticsData.trafficSources.rows.slice(0, 5);
+            if (rows.length === 0) return;
+            
+            container.innerHTML = rows.map((row, i) => `
+                <div class="table-row">
+                    <div class="table-label">
+                        <span class="table-rank">${i + 1}</span>
+                        <span class="table-name">${row.sessionSource || 'Unknown'}</span>
+                    </div>
+                    <div class="table-value">${formatNumber(row.sessions || 0)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderDevices() {
+            const container = document.getElementById('devicesTable');
+            if (!container || !state.analyticsData || !state.analyticsData.devices || !state.analyticsData.devices.rows) return;
+            
+            const rows = state.analyticsData.devices.rows;
+            if (rows.length === 0) return;
+            
+            const total = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+            if (total === 0) return;
+            
+            container.innerHTML = rows.map((row, i) => `
+                <div class="table-row">
+                    <div class="table-label">
+                        <span class="table-rank">${i + 1}</span>
+                        <span class="table-name">${row.deviceCategory || 'Unknown'}</span>
+                    </div>
+                    <div class="table-value">${(((row.sessions || 0) / total) * 100).toFixed(1)}%</div>
+                </div>
+            `).join('');
+        }
+
+        function renderTrafficChart() {
+            const ctx = document.getElementById('trafficChart');
+            if (!ctx || !state.analyticsData || !state.analyticsData.dailyData || !state.analyticsData.dailyData.rows) return;
+            
+            const data = state.analyticsData.dailyData.rows;
+            if (data.length === 0) return;
+            
+            if (state.trafficChart) {
+                state.trafficChart.destroy();
+            }
+            
+            const labels = data.map(r => {
+                const d = r.date || '';
+                return d.length >= 8 ? `${d.slice(4,6)}/${d.slice(6,8)}` : '';
+            });
+            
+            state.trafficChart = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Sessions',
+                        data: data.map(r => r.sessions || 0),
+                        borderColor: '#9945ff',
+                        backgroundColor: 'rgba(153, 69, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#9945ff',
+                        borderWidth: 2
+                    }, {
+                        label: 'Users',
+                        data: data.map(r => r.totalUsers || 0),
+                        borderColor: '#00e5ff',
+                        backgroundColor: 'transparent',
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#00e5ff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                color: '#9090a8',
+                                usePointStyle: true,
+                                padding: 15,
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f0f18',
+                            titleColor: '#f5f5fa',
+                            bodyColor: '#9090a8',
+                            borderColor: 'rgba(153, 69, 255, 0.2)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(153, 69, 255, 0.05)' },
+                            ticks: { color: '#505068', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(153, 69, 255, 0.05)' },
+                            ticks: { color: '#505068', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // AI Insights Engine
+        // ============================================
+
+        function generateInsights() {
+            if (!state.analyticsData) return;
+            
+            const insights = [];
+            const { current, previous, topPages, trafficSources, devices, dailyData } = state.analyticsData;
+            
+            // Safety check for required data
+            if (!current || !current.totals || !previous || !previous.totals) {
+                renderInsights([{
+                    type: 'info',
+                    title: 'Gathering Data',
+                    detail: 'Analytics data is being processed. Insights will appear shortly.',
+                    badge: 'LOADING'
+                }]);
+                return;
+            }
+            
+            // 1. Traffic Trend Analysis
+            const currentSessions = current.totals.sessions || 0;
+            const previousSessions = previous.totals.sessions || 0;
+            const trafficChange = previousSessions > 0 
+                ? ((currentSessions - previousSessions) / previousSessions) * 100 
+                : 0;
+            
+            if (trafficChange < -20) {
+                insights.push({
+                    type: 'critical',
+                    title: 'Significant Traffic Drop Detected',
+                    detail: `Sessions are down <span class="insight-metric">${Math.abs(trafficChange).toFixed(1)}%</span> compared to the previous period. Investigate potential causes: technical issues, seasonal patterns, or campaign changes.`,
+                    badge: 'CRITICAL'
+                });
+            } else if (trafficChange > 30) {
+                insights.push({
+                    type: 'success',
+                    title: 'Traffic Surge Detected',
+                    detail: `Sessions are up <span class="insight-metric">${trafficChange.toFixed(1)}%</span>! Review what's driving this growth to replicate success.`,
+                    badge: 'GROWTH'
+                });
+            }
+            
+            // 2. Bounce Rate Analysis
+            const bounceRate = (current.totals.bounceRate || 0) * 100;
+            if (bounceRate > 70) {
+                insights.push({
+                    type: 'warning',
+                    title: 'High Bounce Rate Alert',
+                    detail: `Your bounce rate is <span class="insight-metric">${bounceRate.toFixed(1)}%</span>. This is above industry standard (40-60%). Consider: improving page load speed, mobile experience, or content relevance.`,
+                    badge: 'ATTENTION'
+                });
+            } else if (bounceRate > 0 && bounceRate < 30) {
+                insights.push({
+                    type: 'success',
+                    title: 'Excellent Engagement',
+                    detail: `Bounce rate of <span class="insight-metric">${bounceRate.toFixed(1)}%</span> indicates visitors are exploring your site. Great job with content engagement!`,
+                    badge: 'WINNING'
+                });
+            }
+            
+            // 3. Session Duration Analysis
+            const avgDuration = current.totals.averageSessionDuration || 0;
+            if (avgDuration > 0 && avgDuration < 30) {
+                insights.push({
+                    type: 'warning',
+                    title: 'Low Session Duration',
+                    detail: `Average session is only <span class="insight-metric">${Math.floor(avgDuration)}s</span>. Visitors aren't engaging deeply. Consider adding interactive content, clear CTAs, or improving content structure.`,
+                    badge: 'IMPROVE'
+                });
+            } else if (avgDuration > 180) {
+                insights.push({
+                    type: 'success',
+                    title: 'Strong User Engagement',
+                    detail: `Average <span class="insight-metric">${Math.floor(avgDuration / 60)}min ${Math.floor(avgDuration % 60)}s</span> session duration shows visitors find your content valuable.`,
+                    badge: 'EXCELLENT'
+                });
+            }
+            
+            // 4. Pages per Session (Computed Metric)
+            const pageViews = current.totals.screenPageViews || 0;
+            const sessions = current.totals.sessions || 1;
+            const pagesPerSession = pageViews / sessions;
+            if (pagesPerSession > 0 && pagesPerSession < 1.5) {
+                insights.push({
+                    type: 'info',
+                    title: 'Low Pages Per Session',
+                    detail: `Users view only <span class="insight-metric">${pagesPerSession.toFixed(1)}</span> pages per visit. Improve internal linking and add related content suggestions to increase engagement.`,
+                    badge: 'OPPORTUNITY'
+                });
+            }
+            
+            // 5. New vs Returning User Ratio (Computed)
+            const totalUsers = current.totals.totalUsers || 0;
+            const newUserRatio = sessions > 0 ? (totalUsers / sessions) * 100 : 0;
+            if (newUserRatio > 0) {
+                insights.push({
+                    type: 'info',
+                    title: 'User Acquisition Efficiency',
+                    detail: `<span class="insight-metric">${newUserRatio.toFixed(0)}%</span> of sessions are from unique users. ${newUserRatio > 80 ? 'Strong acquisition, but focus on retention.' : 'Good balance of new and returning visitors.'}`,
+                    badge: 'METRIC'
+                });
+            }
+            
+            // 6. Device Performance Gap
+            if (devices && devices.rows && devices.rows.length >= 2) {
+                const mobile = devices.rows.find(r => r.deviceCategory === 'mobile');
+                const desktop = devices.rows.find(r => r.deviceCategory === 'desktop');
+                
+                if (mobile && desktop && mobile.sessions && desktop.sessions) {
+                    const mobileShare = mobile.sessions / (mobile.sessions + desktop.sessions) * 100;
+                    if (mobileShare > 60) {
+                        insights.push({
+                            type: 'info',
+                            title: 'Mobile-Dominant Traffic',
+                            detail: `<span class="insight-metric">${mobileShare.toFixed(0)}%</span> of traffic is mobile. Prioritize mobile UX, page speed, and mobile-specific CTAs.`,
+                            badge: 'MOBILE'
+                        });
+                    }
+                }
+            }
+            
+            // 7. Traffic Source Concentration Risk
+            if (trafficSources && trafficSources.rows && trafficSources.rows.length > 0) {
+                const topSource = trafficSources.rows[0];
+                const totalSessions = trafficSources.rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+                
+                if (totalSessions > 0 && topSource.sessions) {
+                    const topSourceShare = (topSource.sessions / totalSessions) * 100;
+                    
+                    if (topSourceShare > 70) {
+                        insights.push({
+                            type: 'warning',
+                            title: 'Traffic Concentration Risk',
+                            detail: `<span class="insight-metric">${topSourceShare.toFixed(0)}%</span> of traffic comes from "${topSource.sessionSource || 'top source'}". Diversify channels to reduce dependency risk.`,
+                            badge: 'RISK'
+                        });
+                    }
+                }
+            }
+            
+            // 8. Weekend vs Weekday Pattern (if we have daily data)
+            if (dailyData && dailyData.rows && dailyData.rows.length >= 7) {
+                let weekendSessions = 0, weekdaySessions = 0;
+                dailyData.rows.forEach(row => {
+                    if (row.date && row.sessions) {
+                        const date = new Date(
+                            row.date.slice(0, 4),
+                            parseInt(row.date.slice(4, 6)) - 1,
+                            row.date.slice(6, 8)
+                        );
+                        const day = date.getDay();
+                        if (day === 0 || day === 6) {
+                            weekendSessions += row.sessions;
+                        } else {
+                            weekdaySessions += row.sessions;
+                        }
+                    }
+                });
+                
+                const weekendAvg = weekendSessions / 2;
+                const weekdayAvg = weekdaySessions / 5;
+                
+                if (weekdayAvg > 0 && weekendAvg > weekdayAvg * 1.5) {
+                    insights.push({
+                        type: 'info',
+                        title: 'Weekend Traffic Pattern',
+                        detail: `Your site gets <span class="insight-metric">${((weekendAvg / weekdayAvg - 1) * 100).toFixed(0)}%</span> more traffic on weekends. Consider timing campaigns and content releases for weekends.`,
+                        badge: 'PATTERN'
+                    });
+                }
+            }
+            
+            // 9. Page Concentration
+            if (topPages && topPages.rows && topPages.rows.length >= 2) {
+                const totalViews = topPages.rows.reduce((sum, r) => sum + (r.screenPageViews || 0), 0);
+                
+                if (totalViews > 0 && topPages.rows[0].screenPageViews) {
+                    const topPageShare = (topPages.rows[0].screenPageViews / totalViews) * 100;
+                    
+                    if (topPageShare > 60) {
+                        insights.push({
+                            type: 'info',
+                            title: 'Homepage Dominance',
+                            detail: `<span class="insight-metric">${topPageShare.toFixed(0)}%</span> of views are on "${topPages.rows[0].pagePath || '/'}". Create compelling internal links to distribute traffic to key service pages.`,
+                            badge: 'FLOW'
+                        });
+                    }
+                }
+            }
+            
+            // 10. Traffic Velocity (Growth Rate)
+            if (dailyData && dailyData.rows && dailyData.rows.length >= 3) {
+                const recent = dailyData.rows.slice(-3);
+                const older = dailyData.rows.slice(0, 3);
+                const recentAvg = recent.reduce((sum, r) => sum + (r.sessions || 0), 0) / recent.length;
+                const olderAvg = older.reduce((sum, r) => sum + (r.sessions || 0), 0) / older.length;
+                
+                if (olderAvg > 0) {
+                    const velocity = ((recentAvg - olderAvg) / olderAvg) * 100;
+                    
+                    if (Math.abs(velocity) > 20) {
+                        insights.push({
+                            type: velocity > 0 ? 'success' : 'warning',
+                            title: velocity > 0 ? 'Accelerating Growth' : 'Decelerating Traffic',
+                            detail: `Recent traffic is trending <span class="insight-metric">${velocity > 0 ? 'up' : 'down'} ${Math.abs(velocity).toFixed(0)}%</span> compared to earlier in the period. ${velocity > 0 ? 'Momentum is building!' : 'Investigate the slowdown.'}`,
+                            badge: 'TREND'
+                        });
+                    }
+                }
+            }
+            
+            // 11. Geographic Concentration Analysis
+            if (state.analyticsData.geoCountries && state.analyticsData.geoCountries.rows && state.analyticsData.geoCountries.rows.length > 0) {
+                const geoRows = state.analyticsData.geoCountries.rows;
+                const totalGeoSessions = geoRows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+                const topCountry = geoRows[0];
+                
+                if (totalGeoSessions > 0 && topCountry && topCountry.sessions) {
+                    const topCountryShare = (topCountry.sessions / totalGeoSessions) * 100;
+                    
+                    if (topCountryShare > 80) {
+                        insights.push({
+                            type: 'info',
+                            title: 'Single Market Dominance',
+                            detail: `<span class="insight-metric">${topCountryShare.toFixed(0)}%</span> of traffic comes from ${topCountry.country || 'top country'}. Consider localized campaigns for secondary markets to diversify reach.`,
+                            badge: 'GEO'
+                        });
+                    } else if (geoRows.length >= 3) {
+                        const internationalShare = geoRows.slice(1).reduce((sum, r) => sum + (r.sessions || 0), 0) / totalGeoSessions * 100;
+                        if (internationalShare > 30) {
+                            insights.push({
+                                type: 'success',
+                                title: 'Strong International Presence',
+                                detail: `<span class="insight-metric">${internationalShare.toFixed(0)}%</span> of traffic is international. Your content resonates across borders—consider multilingual landing pages.`,
+                                badge: 'GLOBAL'
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // 12. City-Level Opportunity
+            if (state.analyticsData.geoCities && state.analyticsData.geoCities.rows && state.analyticsData.geoCities.rows.length >= 3) {
+                const cityRows = state.analyticsData.geoCities.rows;
+                const topCities = cityRows.slice(0, 3).map(c => c.city || 'Unknown').filter(c => c !== 'Unknown').join(', ');
+                if (topCities) {
+                    insights.push({
+                        type: 'info',
+                        title: 'Top City Clusters',
+                        detail: `Your top visitor cities are: <span class="insight-metric">${topCities}</span>. Consider local SEO and geo-targeted ads for these metros.`,
+                        badge: 'LOCAL'
+                    });
+                }
+            }
+            
+            // 13. Referral Quality Analysis
+            if (state.analyticsData.referrals && state.analyticsData.referrals.rows && state.analyticsData.referrals.rows.length > 0) {
+                const refRows = state.analyticsData.referrals.rows;
+                const organicRefs = refRows.filter(r => r.sessionSourceMedium && r.sessionSourceMedium.includes('organic'));
+                const paidRefs = refRows.filter(r => r.sessionSourceMedium && (r.sessionSourceMedium.includes('paid') || r.sessionSourceMedium.includes('cpc')));
+                
+                const totalRefSessions = refRows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+                const organicSessions = organicRefs.reduce((sum, r) => sum + (r.sessions || 0), 0);
+                
+                if (totalRefSessions > 0) {
+                    const organicPct = (organicSessions / totalRefSessions) * 100;
+                    
+                    if (organicPct > 60) {
+                        insights.push({
+                            type: 'success',
+                            title: 'Strong Organic Foundation',
+                            detail: `<span class="insight-metric">${organicPct.toFixed(0)}%</span> of traffic is organic. SEO is working—continue content investment.`,
+                            badge: 'SEO'
+                        });
+                    } else if (organicPct < 20) {
+                        insights.push({
+                            type: 'warning',
+                            title: 'Low Organic Visibility',
+                            detail: `Only <span class="insight-metric">${organicPct.toFixed(0)}%</span> organic traffic. Prioritize SEO and content marketing to reduce paid dependency.`,
+                            badge: 'SEO'
+                        });
+                    }
+                }
+            }
+            
+            // Render insights
+            renderInsights(insights);
+        }
+
+        function renderInsights(insights) {
+            const container = document.getElementById('insightsList');
+            
+            if (insights.length === 0) {
+                container.innerHTML = `
+                    <div class="insight-card info">
+                        <span class="insight-badge">ℹ️ INFO</span>
+                        <h3 class="insight-title">No Critical Insights</h3>
+                        <p class="insight-detail">Your analytics look stable. Keep monitoring for changes.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = insights.map(insight => `
+                <div class="insight-card ${insight.type}">
+                    <span class="insight-badge">${insight.badge}</span>
+                    <h3 class="insight-title">${insight.title}</h3>
+                    <p class="insight-detail">${insight.detail}</p>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // Geo Data Rendering
+        // ============================================
+
+        function renderGeoData() {
+            if (!state.analyticsData) return;
+            
+            const { geoCountries, geoCities, referrals } = state.analyticsData;
+            
+            // Render hotspots (top locations) - with null checks
+            if (geoCountries && geoCountries.rows && geoCountries.rows.length > 0) {
+                renderGeoHotspots(geoCountries.rows.slice(0, 4));
+                renderGeoList('geoCountries', geoCountries.rows.slice(0, 5), 'country');
+            }
+            
+            // Render city list
+            if (geoCities && geoCities.rows && geoCities.rows.length > 0) {
+                renderGeoList('geoCities', geoCities.rows.slice(0, 5), 'city');
+            }
+            
+            // Render referral sources
+            if (referrals && referrals.rows && referrals.rows.length > 0) {
+                renderReferralSources(referrals.rows.slice(0, 6));
+            }
+        }
+
+        function renderGeoHotspots(countries) {
+            const container = document.getElementById('geoHotspots');
+            const flags = {
+                'United States': '🇺🇸', 'Canada': '🇨🇦', 'United Kingdom': '🇬🇧',
+                'Germany': '🇩🇪', 'Australia': '🇦🇺', 'France': '🇫🇷', 'India': '🇮🇳',
+                'Brazil': '🇧🇷', 'Mexico': '🇲🇽', 'Japan': '🇯🇵', 'Spain': '🇪🇸'
+            };
+            
+            container.innerHTML = countries.map(c => `
+                <div class="geo-hotspot">
+                    <span class="geo-hotspot-dot"></span>
+                    <span>${flags[c.country] || '🌍'} ${c.country}</span>
+                    <span style="color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;">${c.sessions}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderGeoList(containerId, rows, dimension) {
+            const container = document.getElementById(containerId);
+            if (!container || !rows || rows.length === 0) return;
+            
+            const totalSessions = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+            if (totalSessions === 0) return;
+            
+            const flags = {
+                'United States': '🇺🇸', 'Canada': '🇨🇦', 'United Kingdom': '🇬🇧',
+                'Germany': '🇩🇪', 'Australia': '🇦🇺', 'France': '🇫🇷', 'India': '🇮🇳'
+            };
+            
+            container.innerHTML = rows.map(row => {
+                const pct = ((row.sessions / totalSessions) * 100).toFixed(1);
+                const name = row[dimension] || 'Unknown';
+                const flag = dimension === 'country' ? (flags[name] || '🌍') : '📍';
+                
+                return `
+                    <li class="geo-item" data-filter-type="${dimension}" data-filter-value="${name}">
+                        <span class="geo-item-name">
+                            <span class="geo-flag">${flag}</span>
+                            ${name}
+                        </span>
+                        <span class="geo-item-value">${pct}%</span>
+                    </li>
+                `;
+            }).join('');
+            
+            // Add click handlers for filtering
+            container.querySelectorAll('.geo-item').forEach(item => {
+                item.style.cursor = 'pointer';
+                item.addEventListener('click', () => {
+                    const filterType = item.dataset.filterType;
+                    const filterValue = item.dataset.filterValue;
+                    applyFilter(filterType, filterValue);
+                });
+            });
+        }
+
+        function renderReferralSources(rows) {
+            const container = document.getElementById('referralSourcesTable');
+            
+            const sourceIcons = {
+                'google': '🔍', 'direct': '➡️', 'linkedin': '💼', 'facebook': '📘',
+                'twitter': '🐦', 'bing': '🔎', 'email': '📧', 'newsletter': '📧'
+            };
+            
+            container.innerHTML = rows.map((row, i) => {
+                const sourceMedium = row.sessionSourceMedium || 'unknown';
+                const [source] = sourceMedium.split(' / ');
+                const icon = sourceIcons[source.toLowerCase()] || '🔗';
+                
+                return `
+                    <div class="table-row" data-filter-type="source" data-filter-value="${source}" style="cursor: pointer;">
+                        <div class="table-label">
+                            <span class="table-rank">${icon}</span>
+                            <span class="table-name">${sourceMedium}</span>
+                        </div>
+                        <div class="table-value">${formatNumber(row.sessions)}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add click handlers
+            container.querySelectorAll('.table-row').forEach(item => {
+                item.addEventListener('click', () => {
+                    applyFilter('source', item.dataset.filterValue);
+                });
+            });
+        }
+
+        // ============================================
+        // Filter System
+        // ============================================
+
+        function applyFilter(type, value) {
+            state.filters[type] = value;
+            updateFilterUI();
+            // In production, this would re-fetch data with filter applied
+            console.log(`Filter applied: ${type} = ${value}`);
+        }
+
+        function clearFilters() {
+            state.filters = { country: null, city: null, source: null };
+            updateFilterUI();
+        }
+
+        function updateFilterUI() {
+            // Update filter dropdowns
+            const countryFilter = document.getElementById('countryFilter');
+            const cityFilter = document.getElementById('cityFilter');
+            const sourceFilter = document.getElementById('sourceFilter');
+            
+            countryFilter.querySelector('.filter-value').textContent = state.filters.country || 'All';
+            countryFilter.classList.toggle('active', !!state.filters.country);
+            
+            cityFilter.querySelector('.filter-value').textContent = state.filters.city || 'All';
+            cityFilter.classList.toggle('active', !!state.filters.city);
+            
+            sourceFilter.querySelector('.filter-value').textContent = state.filters.source || 'All';
+            sourceFilter.classList.toggle('active', !!state.filters.source);
+        }
+
+        function openFilterModal(type) {
+            state.activeFilterType = type;
+            const modal = document.getElementById('filterModal');
+            const backdrop = document.getElementById('filterBackdrop');
+            const title = document.getElementById('filterModalTitle');
+            const options = document.getElementById('filterOptions');
+            
+            const titles = { country: 'Select Country', city: 'Select City', source: 'Select Source' };
+            title.textContent = titles[type] || 'Select Option';
+            
+            // Get options based on type
+            let optionList = [];
+            switch(type) {
+                case 'country': optionList = state.filterOptions.countries; break;
+                case 'city': optionList = state.filterOptions.cities; break;
+                case 'source': optionList = state.filterOptions.sources; break;
+            }
+            
+            options.innerHTML = `
+                <div class="filter-option ${!state.filters[type] ? 'selected' : ''}" data-value="">All</div>
+                ${optionList.map(opt => `
+                    <div class="filter-option ${state.filters[type] === opt ? 'selected' : ''}" data-value="${opt}">${opt}</div>
+                `).join('')}
+            `;
+            
+            // Add click handlers
+            options.querySelectorAll('.filter-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    const value = opt.dataset.value || null;
+                    applyFilter(type, value);
+                    closeFilterModal();
+                });
+            });
+            
+            modal.classList.add('open');
+            backdrop.classList.add('open');
+        }
+
+        function closeFilterModal() {
+            document.getElementById('filterModal').classList.remove('open');
+            document.getElementById('filterBackdrop').classList.remove('open');
+            state.activeFilterType = null;
+        }
+
+        // ============================================
+        // UI Interactions
+        // ============================================
+
+        function showLoading(show) {
+            document.getElementById('loadingState').classList.toggle('view-hidden', !show);
+            document.getElementById('dashboard').classList.toggle('view-hidden', show || !state.isSignedIn);
+        }
+
+        function switchTab(tabName) {
+            state.currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabName);
+            });
+            
+            // Show/hide panels
+            document.getElementById('dashboard').classList.toggle('view-hidden', tabName !== 'dashboard' && tabName !== 'insights');
+            document.getElementById('settingsPanel').classList.toggle('view-hidden', tabName !== 'settings');
+            
+            // If insights tab, scroll to insights section
+            if (tabName === 'insights') {
+                document.getElementById('insightsSection').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // ============================================
+        // Event Listeners
+        // ============================================
+
         document.addEventListener('DOMContentLoaded', () => {
+            // Sign in button
             document.getElementById('signInBtn').addEventListener('click', handleAuthClick);
+            
+            // Sign out button
             document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
-            // ... your other listeners ...
-
-            // Start API init with small delay to ensure scripts loaded
-            setTimeout(initGoogleAPIs, 500);
+            
+            // Refresh button - force refresh bypasses cache
+            document.getElementById('refreshBtn').addEventListener('click', () => {
+                if (state.isSignedIn) {
+                    fetchAnalyticsData(true); // true = force refresh
+                }
+            });
+            
+            // Settings button
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                switchTab('settings');
+            });
+            
+            // Date range selector
+            document.querySelectorAll('.date-chip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    state.currentRange = chip.dataset.range;
+                    if (state.isSignedIn) {
+                        fetchAnalyticsData();
+                    }
+                });
+            });
+            
+            // Tab bar
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                });
+            });
+            
+            // Filter dropdowns
+            document.getElementById('countryFilter').addEventListener('click', () => openFilterModal('country'));
+            document.getElementById('cityFilter').addEventListener('click', () => openFilterModal('city'));
+            document.getElementById('sourceFilter').addEventListener('click', () => openFilterModal('source'));
+            document.getElementById('clearFilters').addEventListener('click', clearFilters);
+            document.getElementById('closeFilterModal').addEventListener('click', closeFilterModal);
+            document.getElementById('filterBackdrop').addEventListener('click', closeFilterModal);
+            
+            // Initialize Google APIs - with retry for async loading
+            let initAttempts = 0;
+            const maxAttempts = 50; // 5 seconds max
+            
+            function initGoogleAPIs() {
+                initAttempts++;
+                
+                if (typeof gapi !== 'undefined' && !gapiInited) {
+                    gapiLoaded();
+                }
+                if (typeof google !== 'undefined' && google.accounts && !gisInited) {
+                    gisLoaded();
+                }
+                
+                // Retry if not yet loaded, but stop after max attempts
+                if ((!gapiInited || !gisInited) && initAttempts < maxAttempts) {
+                    setTimeout(initGoogleAPIs, 100);
+                } else if (initAttempts >= maxAttempts && (!gapiInited || !gisInited)) {
+                    console.error('Failed to initialize Google APIs after', maxAttempts, 'attempts');
+                    alert('Failed to load Google APIs. Please check your internet connection and try refreshing the page.');
+                }
+            }
+            
+            initGoogleAPIs();
         });
 
-        // Fallback on window load
-        window.addEventListener('load', () => setTimeout(initGoogleAPIs, 1000));
+        // Fallback: Also try on window load
+        window.addEventListener('load', function() {
+            if (typeof gapi !== 'undefined' && !gapiInited) {
+                gapiLoaded();
+            }
+            if (typeof google !== 'undefined' && google.accounts && !gisInited) {
+                gisLoaded();
+            }
+        });
     </script>
 </body>
 </html>
