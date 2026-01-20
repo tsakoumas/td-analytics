@@ -1454,10 +1454,21 @@
             };
         }
 
+        // Debounce flag to prevent rapid API calls
+        let isFetching = false;
+        
         async function fetchAnalyticsData() {
+            // Prevent multiple simultaneous fetches
+            if (isFetching) {
+                console.log('Fetch already in progress, skipping...');
+                return;
+            }
+            
+            isFetching = true;
             showLoading(true);
             
             const dates = getDateRange(state.currentRange);
+            console.log('Fetching data for range:', state.currentRange, dates);
             
             try {
                 // Fetch current period data
@@ -1511,12 +1522,15 @@
                 console.error('Error fetching analytics:', err);
                 // Show error state
             } finally {
+                isFetching = false;
                 showLoading(false);
             }
         }
 
         async function runGA4Report(startDate, endDate, dimensions = [], metrics = ['sessions', 'totalUsers', 'bounceRate', 'averageSessionDuration', 'screenPageViews']) {
             try {
+                console.log('GA4 API Request:', { startDate, endDate, dimensions, metrics });
+                
                 const response = await gapi.client.analyticsdata.properties.runReport({
                     property: CONFIG.PROPERTY_ID,
                     requestBody: {
@@ -1528,10 +1542,12 @@
                     }
                 });
                 
+                console.log('GA4 API Response:', response.result);
                 return parseGA4Response(response.result, dimensions, metrics);
             } catch (err) {
                 console.error('GA4 API Error:', err);
-                return generateMockData(dimensions, metrics);
+                // Return empty data instead of random mock data
+                return { totals: {}, rows: [], error: err.message || 'API Error' };
             }
         }
 
@@ -1549,8 +1565,9 @@
                 
                 return parseGA4Response(response.result, ['date'], ['sessions', 'totalUsers']);
             } catch (err) {
-                console.error('GA4 API Error:', err);
-                return generateMockDailyData();
+                console.error('GA4 API Error (daily):', err);
+                // Return empty data instead of random mock data
+                return { totals: {}, rows: [], error: err.message || 'API Error' };
             }
         }
 
@@ -1599,97 +1616,6 @@
             }
             
             return { totals, rows };
-        }
-
-        // ============================================
-        // Mock Data Generator (for development)
-        // ============================================
-
-        function generateMockData(dimensions, metrics) {
-            const totals = {};
-            metrics.forEach(m => {
-                switch(m) {
-                    case 'sessions': totals[m] = Math.floor(Math.random() * 500) + 100; break;
-                    case 'totalUsers': totals[m] = Math.floor(Math.random() * 400) + 80; break;
-                    case 'bounceRate': totals[m] = Math.random() * 0.5 + 0.3; break;
-                    case 'averageSessionDuration': totals[m] = Math.random() * 180 + 60; break;
-                    case 'screenPageViews': totals[m] = Math.floor(Math.random() * 1500) + 200; break;
-                    default: totals[m] = Math.random() * 100;
-                }
-            });
-            
-            const rows = [];
-            if (dimensions.length > 0) {
-                const sampleDimensions = {
-                    pagePath: ['/', '/services', '/about', '/contact', '/blog', '/case-studies', '/pricing'],
-                    sessionSource: ['google', 'direct', '(not set)', 'linkedin', 'facebook', 'bing', 'twitter'],
-                    deviceCategory: ['mobile', 'desktop', 'tablet'],
-                    country: ['United States', 'Canada', 'United Kingdom', 'Germany', 'Australia', 'France', 'India'],
-                    city: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Toronto', 'London', 'Sydney'],
-                    region: ['California', 'Texas', 'New York', 'Florida', 'Ontario', 'England', 'New South Wales'],
-                    sessionSourceMedium: ['google / organic', 'direct / (none)', 'linkedin / referral', 'facebook / paid', 'bing / organic', 'newsletter / email'],
-                    landingPage: ['/', '/services', '/contact', '/blog/marketing-tips', '/case-studies/client-a']
-                };
-                
-                // Country flags for display
-                const countryFlags = {
-                    'United States': '🇺🇸',
-                    'Canada': '🇨🇦', 
-                    'United Kingdom': '🇬🇧',
-                    'Germany': '🇩🇪',
-                    'Australia': '🇦🇺',
-                    'France': '🇫🇷',
-                    'India': '🇮🇳'
-                };
-                
-                const dimValues = sampleDimensions[dimensions[0]] || ['value1', 'value2', 'value3'];
-                
-                dimValues.slice(0, 7).forEach((val, idx) => {
-                    const row = { [dimensions[0]]: val };
-                    
-                    // Add flag for countries
-                    if (dimensions[0] === 'country') {
-                        row.flag = countryFlags[val] || '🌍';
-                    }
-                    
-                    metrics.forEach(m => {
-                        // Decrease values for lower ranked items
-                        const multiplier = 1 - (idx * 0.12);
-                        switch(m) {
-                            case 'sessions': row[m] = Math.floor((Math.random() * 100 + 50) * multiplier); break;
-                            case 'totalUsers': row[m] = Math.floor((Math.random() * 80 + 40) * multiplier); break;
-                            case 'bounceRate': row[m] = Math.random() * 0.6 + 0.2; break;
-                            case 'averageSessionDuration': row[m] = Math.random() * 200 + 30; break;
-                            case 'screenPageViews': row[m] = Math.floor((Math.random() * 200 + 100) * multiplier); break;
-                            default: row[m] = Math.random() * 50 * multiplier;
-                        }
-                    });
-                    rows.push(row);
-                });
-                
-                // Sort by sessions descending
-                rows.sort((a, b) => (b.sessions || 0) - (a.sessions || 0));
-            }
-            
-            return { totals, rows };
-        }
-
-        function generateMockDailyData() {
-            const rows = [];
-            const today = new Date();
-            const days = dateRanges[state.currentRange].days || 7;
-            
-            for (let i = days; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
-                rows.push({
-                    date: date.toISOString().split('T')[0].replace(/-/g, ''),
-                    sessions: Math.floor(Math.random() * 50) + 10,
-                    totalUsers: Math.floor(Math.random() * 40) + 8
-                });
-            }
-            
-            return { totals: {}, rows };
         }
 
         // ============================================
@@ -2516,3 +2442,4 @@
     </script>
 </body>
 </html>
+
